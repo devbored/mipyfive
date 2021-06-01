@@ -1,0 +1,9 @@
+build/
+__pycache__/
+sim_build/
+results.xml
+*.vcd
+*.il
+*.v
+*_bmc/
+*_cover/
