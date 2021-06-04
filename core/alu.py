@@ -56,30 +56,5 @@ class ALU(Elaboratable):
         return m
 
 if __name__ == "__main__":
-    m = Module()
-    aluWidth = 32
-    m.submodules.alu = alu = ALU(width=aluWidth)
-
-    # Formal assertion for adding
-    with m.If(alu.aluOp == 0):
-        m.d.comb += Assert(alu.out == (alu.in1 + alu.in2)[:aluWidth])
-        m.d.comb += Cover((alu.out == 0x00) & (alu.in1 == 0xfe))
-
-    # Formal assertion for subtracting
-    with m.If(alu.aluOp == 1):
-        m.d.comb += Assert(alu.out == (alu.in1 - alu.in2)[:aluWidth])
-        m.d.comb += Cover((alu.out == 0x00) & (alu.in1 == 0xfe))
-    
-    main(m, ports=[alu.aluOp, alu.in1, alu.in2, alu.out])
-
-    #with Simulator(alu) as sim:
-    #    def process():
-    #        yield alu.in1.eq(5)
-    #        yield alu.in2.eq(6)
-    #        yield alu.aluOp.eq(0)
-    #        yield Delay(1e-6)
-    #    
-    #    sim.add_process(process)
-    #    with sim.write_vcd(vcd_file="alu.vcd"):
-    #        sim.run()
-
+    alu = ALU(width=32)
+    main(alu, ports=[alu.aluOp, alu.in1, alu.in2, alu.out])
