@@ -3,7 +3,6 @@ import sys
 import random
 import argparse
 import unittest
-from enum import Enum
 from nmigen import *
 from nmigen.back.pysim import *
 
@@ -15,6 +14,7 @@ from alu import *
 useVcd = False
 def test_runner(in1, in2, aluOp):
     def test(self):
+        global useVcd
         sim = Simulator(self.dut)
         def process():
             yield self.dut.in1.eq(in1)
@@ -31,9 +31,55 @@ def test_runner(in1, in2, aluOp):
                 yield self.dut.aluOp.eq(2)
                 yield Delay(1e-6)
                 self.assertEqual((yield self.dut.out), in1 & in2)
+            if aluOp is AluOp.OR:
+                yield self.dut.aluOp.eq(3)
+                yield Delay(1e-6)
+                self.assertEqual((yield self.dut.out), in1 | in2)
+            if aluOp is AluOp.XOR:
+                yield self.dut.aluOp.eq(4)
+                yield Delay(1e-6)
+                self.assertEqual((yield self.dut.out), in1 ^ in2)
+            if aluOp is AluOp.SLT:
+                yield self.dut.aluOp.eq(5)
+                yield Delay(1e-6)
+                in1_twos = in1
+                in2_twos = in2
+                if (in1 & (1<<31)):
+                    in1_twos = (in1 - (1 << 32))
+                if (in2 & (1<<31)):
+                    in2_twos = (in2 - (1 << 32))
+                if in1_twos < in2_twos:
+                    self.assertEqual((yield self.dut.out), 1)
+                else:
+                    self.assertEqual((yield self.dut.out), 0)
+            if aluOp is AluOp.SLTU:
+                yield self.dut.aluOp.eq(6)
+                yield Delay(1e-6)
+                if in1 < in2:
+                    self.assertEqual((yield self.dut.out), 1)
+                else:
+                    self.assertEqual((yield self.dut.out), 0)
+            if aluOp is AluOp.SLL:
+                yield self.dut.aluOp.eq(7)
+                yield Delay(1e-6)
+                self.assertEqual((yield self.dut.out), (in1 << in2)%(2**32))
+            if aluOp is AluOp.SRL:
+                yield self.dut.aluOp.eq(8)
+                yield Delay(1e-6)
+                self.assertEqual((yield self.dut.out), in1 >> in2)
+            if aluOp is AluOp.SRA:
+                yield self.dut.aluOp.eq(9)
+                yield Delay(1e-6)
+                if (in1 & (1<<31)):
+                    self.assertEqual((yield self.dut.out), ((in1 - (1 << 32)) >> in2) & 0xffffffff)
+                else:
+                    self.assertEqual((yield self.dut.out), in1 >> in2)
+
+            # Test ALU flag output(s)
+            if (yield self.dut.out) == 0:
+                self.assertEqual((yield self.dut.zflag), 1)
         
         sim.add_process(process)
-        global useVcd
         if useVcd:
             outputDir = os.path.join(mipyfiveRootDir, "out", "vcd")
             if not os.path.exists(outputDir):
@@ -51,13 +97,19 @@ class TestAlu(unittest.TestCase):
 
     int1 = random.randint(0, 2147483647)
     int2 = random.randint(0, 2147483647)
+    test_alu_addition       = test_runner(int1, int2, AluOp.ADD)
+    test_alu_subtraction    = test_runner(int1, int2, AluOp.SUB)
+    test_alu_and            = test_runner(int1, int2, AluOp.AND)
+    test_alu_or             = test_runner(int1, int2, AluOp.OR)
+    test_alu_xor            = test_runner(int1, int2, AluOp.XOR)
+    test_alu_slt            = test_runner(int1, int2, AluOp.SLT)
+    test_alu_sltu           = test_runner(int1, int2, AluOp.SLTU)
 
-    # Unit tests
-    test_alu_addition = test_runner(int1, int2, AluOp.ADD)
-    test_alu_subtraction = test_runner(int1, int2, AluOp.SUB)
-    test_alu_and = test_runner(int1, int2, AluOp.AND)
-    test_alu_or = test_runner(int1, int2, AluOp.OR)
-    test_alu_xor = test_runner(int1, int2, AluOp.XOR)
+    int1 = random.randint(0, 4294967295)
+    int2 = random.randint(0, 31)
+    test_alu_sll            = test_runner(int1, int2, AluOp.SLL)
+    test_alu_srl            = test_runner(int1, int2, AluOp.SRL)
+    test_alu_sra            = test_runner(int1, 4, AluOp.SRA)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -65,6 +117,7 @@ if __name__ == "__main__":
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
     if args.vcd is True:
+        print("[INFO]: Emitting VCD files...")
         useVcd = True
     
     unittest.main(verbosity=2)

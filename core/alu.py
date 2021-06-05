@@ -2,11 +2,16 @@ from enum import Enum
 from nmigen import *
 
 class AluOp(Enum):
-    ADD = 0
-    SUB = 1
-    AND = 2
-    OR  = 3
-    XOR = 4
+    ADD     = 0
+    SUB     = 1
+    AND     = 2
+    OR      = 3
+    XOR     = 4
+    SLT     = 5 # Set if Less Than
+    SLTU    = 6 # Set if Less Than (Unsigned)
+    SLL     = 7 # Shift Left Logically
+    SRL     = 8 # Shift Right Logically
+    SRA     = 9 # Shift Right Arithmetically
 
 class Adder(Elaboratable):
     def __init__(self, width):
@@ -69,6 +74,7 @@ class ALU(Elaboratable):
         self.in1 = Signal(width)
         self.in2 = Signal(width)
         self.out = Signal(width)
+        self.zflag = Signal()
 
         # Submodule handles
         self.add = Adder(width)
@@ -113,8 +119,22 @@ class ALU(Elaboratable):
             m.d.comb += self.out.eq(self.OR.out)
         with m.Elif(self.aluOp == AluOp.XOR):
             m.d.comb += self.out.eq(self.XOR.out)
-        # Invalid AluOp should just output 0
+        with m.Elif(self.aluOp == AluOp.SLT):
+            m.d.comb += self.out.eq(self.in1.as_signed() < self.in2.as_signed())
+        with m.Elif(self.aluOp == AluOp.SLTU):
+            m.d.comb += self.out.eq(self.in1 < self.in2)
+        with m.Elif(self.aluOp == AluOp.SLL):
+            m.d.comb += self.out.eq(self.in1 << self.in2)
+        with m.Elif(self.aluOp == AluOp.SRL):
+            m.d.comb += self.out.eq(self.in1 >> self.in2)
+        with m.Elif(self.aluOp == AluOp.SRA):
+            m.d.comb += self.out.eq(self.in1.as_signed() >> self.in2)
+        # Default: Invalid AluOp should just output 0
         with m.Else():
             m.d.comb += self.out.eq(0)
+
+        # ALU flag(s)
+        with m.If(self.out == 0):
+            m.d.comb += self.zflag.eq(1)
 
         return m
