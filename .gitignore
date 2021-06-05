@@ -1,3 +1,4 @@
+.vscode/
 build/
 __pycache__/
 sim_build/
@@ -7,3 +8,4 @@ results.xml
 *.v
 *_bmc/
 *_cover/
+out/
