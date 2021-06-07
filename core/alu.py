@@ -1,5 +1,6 @@
 from enum import Enum
 from nmigen import *
+import math
 
 class AluOp(Enum):
     ADD     = 0
@@ -74,7 +75,7 @@ class ALU(Elaboratable):
         self.in1 = Signal(width)
         self.in2 = Signal(width)
         self.out = Signal(width)
-        self.zflag = Signal()
+        self.zflag = Signal(1)
 
         # Submodule handles
         self.add = Adder(width)
@@ -124,7 +125,7 @@ class ALU(Elaboratable):
         with m.Elif(self.aluOp == AluOp.SLTU):
             m.d.comb += self.out.eq(self.in1 < self.in2)
         with m.Elif(self.aluOp == AluOp.SLL):
-            m.d.comb += self.out.eq(self.in1 << self.in2)
+            m.d.comb += self.out.eq(self.in1 << self.in2[:int(math.log(self.in2.width, 2))])
         with m.Elif(self.aluOp == AluOp.SRL):
             m.d.comb += self.out.eq(self.in1 >> self.in2)
         with m.Elif(self.aluOp == AluOp.SRA):

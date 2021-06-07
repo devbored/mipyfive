@@ -11,10 +11,12 @@ mipyfiveCoreDir = os.path.join(mipyfiveRootDir, "core")
 sys.path.append(mipyfiveCoreDir)
 from alu import *
 
-useVcd = False
+createVcd = False
+outputDir = os.path.join(mipyfiveRootDir, "out", "alu_vcd")
 def test_runner(in1, in2, aluOp):
     def test(self):
-        global useVcd
+        global createVcd
+        global outputDir
         sim = Simulator(self.dut)
         def process():
             yield self.dut.in1.eq(in1)
@@ -80,17 +82,16 @@ def test_runner(in1, in2, aluOp):
                 self.assertEqual((yield self.dut.zflag), 1)
         
         sim.add_process(process)
-        if useVcd:
-            outputDir = os.path.join(mipyfiveRootDir, "out", "vcd")
+        if createVcd:
             if not os.path.exists(outputDir):
                 os.makedirs(outputDir)
-            with sim.write_vcd(vcd_file=os.path.join(outputDir, f"test_{aluOp}.vcd")):
+            with sim.write_vcd(vcd_file=os.path.join(outputDir, f"{self._testMethodName}.vcd")):
                 sim.run()
         else:
             sim.run()
     return test
 
-# Define unit tests object for ALU
+# Define unit tests
 class TestAlu(unittest.TestCase):
     def setUp(self):
         self.dut = ALU(width=32)
@@ -109,7 +110,7 @@ class TestAlu(unittest.TestCase):
     int2 = random.randint(0, 31)
     test_alu_sll            = test_runner(int1, int2, AluOp.SLL)
     test_alu_srl            = test_runner(int1, int2, AluOp.SRL)
-    test_alu_sra            = test_runner(int1, 4, AluOp.SRA)
+    test_alu_sra            = test_runner(int1, int2, AluOp.SRA)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -117,7 +118,7 @@ if __name__ == "__main__":
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
     if args.vcd is True:
-        print("[INFO]: Emitting VCD files...")
-        useVcd = True
+        print(f"[INFO]: Emitting VCD files to --> {outputDir}\n")
+        createVcd = True
     
     unittest.main(verbosity=2)
