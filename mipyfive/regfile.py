@@ -15,9 +15,9 @@ class RegFile(Elaboratable):
             self.rs2Addr        = Signal()
             self.writeAddr      = Signal()
         else:
-            self.rs1Addr        = Signal(int(math.log(regCount, 2)))
-            self.rs2Addr        = Signal(int(math.log(regCount, 2)))
-            self.writeAddr      = Signal(int(math.log(regCount, 2)))
+            self.rs1Addr        = Signal(math.ceil(math.log(regCount, 2)))
+            self.rs2Addr        = Signal(math.ceil(math.log(regCount, 2)))
+            self.writeAddr      = Signal(math.ceil(math.log(regCount, 2)))
 
     def elaborate(self, platform):
         m = Module()
