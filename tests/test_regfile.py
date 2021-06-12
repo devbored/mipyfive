@@ -6,16 +6,15 @@ import unittest
 from nmigen import *
 from nmigen.back.pysim import *
 
-mipyfiveRootDir = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), ".."))
-mipyfiveCoreDir = os.path.join(mipyfiveRootDir, "core")
-sys.path.append(mipyfiveCoreDir)
-from regfile import *
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from mipyfive.regfile import *
 
 createVcd = False
-outputDir = os.path.join(mipyfiveRootDir, "out", "regfile_vcd")
+outputDir = os.path.join(os.path.dirname(__file__), "..", "out", "regfile_vcd")
 def test_regfile_read():
     def test(self):
         global createVcd
+        global outputDir
         sim = Simulator(self.dut)
         testList = []
         def process():
@@ -37,7 +36,6 @@ def test_regfile_read():
         sim.add_clock(1e-6)
         sim.add_sync_process(process)
         if createVcd:
-            outputDir = os.path.join(mipyfiveRootDir, "out", "regfile_vcd")
             if not os.path.exists(outputDir):
                 os.makedirs(outputDir)
             with sim.write_vcd(vcd_file=os.path.join(outputDir, f"{self._testMethodName}.vcd")):
