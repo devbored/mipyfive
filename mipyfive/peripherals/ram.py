@@ -21,7 +21,7 @@ class RAM(Elaboratable):
 
         with m.If(self.writeEnable):
             m.d.sync += self.memory[self.writeAddr].eq(self.writeData)
-        
-        m.d.sync += self.readData.eq(self.memory[self.readAddr])
+        with m.Else():
+            m.d.sync += self.readData.eq(self.memory[self.readAddr])
 
         return m
