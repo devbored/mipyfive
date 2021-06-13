@@ -11,16 +11,31 @@ from mipyfive.pipereg import *
 
 createVcd = False
 outputDir = os.path.join(os.path.dirname(__file__), "..", "out", "pipereg_vcd")
-def test_pipereg(value):
+def test_pipereg(values):
     def test(self):
         global createVcd
         global outputDir
         sim = Simulator(self.dut)
+        
+        # Begin test
         def process():
-            yield self.dut.din.eq(value)
-            for i in range(2):
+            for val in values:
+                yield self.dut.din.eq(val)
+                yield self.dut.en.eq(0)
+                yield self.dut.reg[0].eq(0)
                 yield Tick()
-            self.assertEqual((yield self.dut.dout), value)
+
+                yield self.dut.en.eq(1)
+                for j in range(2):
+                    yield Tick()
+                self.assertEqual((yield self.dut.dout), val)
+
+                # NOTE: Toggling/testing the reset signal in simulation is currently non-working in nMigen...
+                #yield self.dut.rst.eq(1)
+                #for j in range(2):
+                #    yield Tick()
+                #self.assertEqual((yield self.dut.dout), 0)
+        
         sim.add_clock(1e-6)
         sim.add_sync_process(process)
         if createVcd:
@@ -37,9 +52,7 @@ class TestImmgen(unittest.TestCase):
     def setUp(self):
         self.dut = PipeReg(32)
 
-    test_pipereg1  = test_pipereg(0xdeadbeef)
-    test_pipereg2  = test_pipereg(0x5a5a5a5a)
-    test_pipereg3  = test_pipereg(0x0f0f0f0f)
+    test_pipereg = test_pipereg([0xdeadbeef, 0x5a5a5a5a, 0x0f0f0f0f])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -9,7 +9,7 @@ class RegFile(Elaboratable):
         self.rs2Data        = Signal(width)
         self.writeData      = Signal(width)
         self.writeEnable    = Signal()
-        self.regArray       = Memory(width=width, depth=regCount, init=None, name=None, attrs=None)
+        self.regArray       = Memory(width=width, depth=regCount)
         if regCount == 1:
             self.rs1Addr        = Signal()
             self.rs2Addr        = Signal()
