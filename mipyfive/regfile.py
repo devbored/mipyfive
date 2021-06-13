@@ -1,6 +1,5 @@
 from enum import Enum
 from nmigen import *
-from nmigen.cli import main
 import math
 
 class RegFile(Elaboratable):

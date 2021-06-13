@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mipyfive.peripherals.ram import *
 
 createVcd = False
-outputDir = os.path.join(os.path.dirname(__file__), "..", "out", "ram_vcd")
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "ram_vcd"))
 def test_ram_read():
     def test(self):
         global createVcd

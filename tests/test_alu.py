@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mipyfive.alu import *
 
 createVcd = False
-outputDir = os.path.join(os.path.dirname(__file__), "..", "out", "alu_vcd")
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "alu_vcd"))
 def test_runner(in1, in2, aluOp):
     def test(self):
         global createVcd

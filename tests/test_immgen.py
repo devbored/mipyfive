@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mipyfive.immgen import *
 
 createVcd = False
-outputDir = os.path.join(os.path.dirname(__file__), "..", "out", "immgen_vcd")
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "immgen_vcd"))
 def test_immgen(instruction, expectedImm):
     def test(self):
         global createVcd

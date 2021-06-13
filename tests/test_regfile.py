@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mipyfive.regfile import *
 
 createVcd = False
-outputDir = os.path.join(os.path.dirname(__file__), "..", "out", "regfile_vcd")
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "regfile_vcd"))
 def test_regfile_read():
     def test(self):
         global createVcd
