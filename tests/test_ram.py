@@ -29,8 +29,8 @@ def test_ram_read():
             # Test that reading from 
             for i in range(self.dut.memory.depth):
                 yield self.dut.readAddr.eq(i)
-                yield Tick()
-                yield Tick()
+                for j in range(2):
+                    yield Tick()
                 self.assertEqual((yield self.dut.readData), testList[i])
         sim.add_clock(1e-6)
         sim.add_sync_process(process)
