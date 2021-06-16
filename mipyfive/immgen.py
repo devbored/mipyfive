@@ -9,31 +9,11 @@ class ImmGen(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        # NOTE: Python slice notation for --> [a:b] == a to (b-1)
+        # NOTE: Python slice notation for [a:b] == [a:(b-1)]
+        # TODO: Add Case types to "types.py"
         # --- I-type ---
         with m.Switch(self.instruction[0:7]):
-            with m.Case(0b0000011):
-                m.d.comb += self.imm.eq(
-                    Cat(
-                        self.instruction[20:31],
-                        Repl(self.instruction[31], 21)
-                    )
-                )
-            with m.Case(0b0001111):
-                m.d.comb += self.imm.eq(
-                    Cat(
-                        self.instruction[20:31],
-                        Repl(self.instruction[31], 21)
-                    )
-                )
-            with m.Case(0b0010011):
-                m.d.comb += self.imm.eq(
-                    Cat(
-                        self.instruction[20:31],
-                        Repl(self.instruction[31], 21)
-                    )
-                )
-            with m.Case(0b1110011):
+            with m.Case(0b0000011, 0b0001111, 0b0010011, 0b1110011):
                 m.d.comb += self.imm.eq(
                     Cat(
                         self.instruction[20:31],
@@ -64,14 +44,7 @@ class ImmGen(Elaboratable):
                 )
 
             # --- U-type ---
-            with m.Case(0b0010111):
-                m.d.comb += self.imm.eq(
-                    Cat(
-                        Repl(C(0), 12),
-                        self.instruction[12:32]
-                    )
-                )
-            with m.Case(0b0110111):
+            with m.Case(0b0010111, 0b0110111):
                 m.d.comb += self.imm.eq(
                     Cat(
                         Repl(C(0), 12),
@@ -80,18 +53,7 @@ class ImmGen(Elaboratable):
                 )
 
             # --- J-type ---
-            with m.Case(0b1100111):
-                m.d.comb += self.imm.eq(
-                    Cat(
-                        C(0),
-                        self.instruction[21:25],
-                        self.instruction[25:31],
-                        self.instruction[20],
-                        self.instruction[12:20],
-                        Repl(self.instruction[31], 12)
-                    )
-                )
-            with m.Case(0b1101111):
+            with m.Case(0b1100111, 0b1101111):
                 m.d.comb += self.imm.eq(
                     Cat(
                         C(0),

@@ -4,17 +4,17 @@ import math
 # A generic single-port synchronous RAM
 class RAM(Elaboratable):
     def __init__(self, width, depth):
+        if depth == 1:
+            words = 1
+        else:
+            words = math.ceil(math.log(depth, 2))
+        self.writeEnable    = Signal()
         self.readData       = Signal(width)
         self.writeData      = Signal(width)
         self.writeData      = Signal(width)
-        self.writeEnable    = Signal()
+        self.readAddr       = Signal(words)
+        self.writeAddr      = Signal(words)
         self.memory         = Memory(width=width, depth=depth, init=None, name=None, attrs=None)
-        if depth == 1:
-            self.readAddr   = Signal()
-            self.writeAddr  = Signal()
-        else:
-            self.readAddr   = Signal(math.ceil(math.log(depth, 2)))
-            self.writeAddr  = Signal(math.ceil(math.log(depth, 2)))
 
     def elaborate(self, platform):
         m = Module()

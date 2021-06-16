@@ -12,10 +12,8 @@ class PipeReg(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        # Combinational logic
         m.d.comb += self.dout.eq(self.reg[0])
         
-        # Sequential logic
         with m.If(self.rst):
             m.d.sync += self.reg[0].eq(0)
         with m.Elif(self.en):

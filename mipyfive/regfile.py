@@ -4,24 +4,22 @@ import math
 
 class RegFile(Elaboratable):
     def __init__(self, width, regCount):
+        if regCount == 1:
+            regs = 1
+        else:
+            regs = math.ceil(math.log(regCount, 2))
         self.rs1Data        = Signal(width)
         self.rs2Data        = Signal(width)
         self.writeData      = Signal(width)
         self.writeEnable    = Signal()
         self.regArray       = Memory(width=width, depth=regCount)
-        if regCount == 1:
-            self.rs1Addr        = Signal()
-            self.rs2Addr        = Signal()
-            self.writeAddr      = Signal()
-        else:
-            self.rs1Addr        = Signal(math.ceil(math.log(regCount, 2)))
-            self.rs2Addr        = Signal(math.ceil(math.log(regCount, 2)))
-            self.writeAddr      = Signal(math.ceil(math.log(regCount, 2)))
+        self.rs1Addr        = Signal(regs)
+        self.rs2Addr        = Signal(regs)
+        self.writeAddr      = Signal(regs)
 
     def elaborate(self, platform):
         m = Module()
 
-        # Regfile logic
         m.d.comb += [
             self.rs1Data.eq(self.regArray[self.rs1Addr]),
             self.rs2Data.eq(self.regArray[self.rs2Addr])
