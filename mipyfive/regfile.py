@@ -1,13 +1,9 @@
-from enum import Enum
 from nmigen import *
-import math
+from .utils import *
 
 class RegFile(Elaboratable):
     def __init__(self, width, regCount):
-        if regCount == 1:
-            addrBits = 1
-        else:
-            addrBits = math.ceil(math.log(regCount, 2))
+        addrBits            = ceilLog2(regCount)
         self.rs1Data        = Signal(width)
         self.rs2Data        = Signal(width)
         self.writeData      = Signal(width)

@@ -1,13 +1,10 @@
 from nmigen import *
-import math
+from .utils import *
 
 # A generic single-port synchronous RAM
 class RAM(Elaboratable):
     def __init__(self, width, depth):
-        if depth == 1:
-            addrBits = 1
-        else:
-            addrBits = math.ceil(math.log(depth, 2))
+        addrBits            = ceilLog2(depth)
         self.writeEnable    = Signal()
         self.readData       = Signal(width)
         self.writeData      = Signal(width)

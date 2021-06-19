@@ -1,7 +1,6 @@
-from enum import Enum
 from nmigen import *
 from .types import *
-import math
+from .utils import *
 
 class ALU(Elaboratable):
     def __init__(self, width):
@@ -29,7 +28,7 @@ class ALU(Elaboratable):
         with m.Elif(self.aluOp == AluOp.SLTU):
             m.d.comb += self.out.eq(self.in1 < self.in2)
         with m.Elif(self.aluOp == AluOp.SLL):
-            m.d.comb += self.out.eq(self.in1 << self.in2[:int(math.log(self.in2.width, 2))])
+            m.d.comb += self.out.eq(self.in1 << self.in2[:ceilLog2(self.in2.width)])
         with m.Elif(self.aluOp == AluOp.SRL):
             m.d.comb += self.out.eq(self.in1 >> self.in2)
         with m.Elif(self.aluOp == AluOp.SRA):

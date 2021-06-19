@@ -93,3 +93,9 @@ class AluOp(Enum):
     SLL     = 0b0111 # Shift Left Logically
     SRL     = 0b1000 # Shift Right Logically
     SRA     = 0b1001 # Shift Right Arithmetically
+
+# ALU Input Data Hazard Forward Selection MUX Ctrl types
+class AluForwardCtrl(Enum):
+    NO_FWD  = 0b00
+    MEM_WB  = 0b01
+    EX_MEM  = 0b10
