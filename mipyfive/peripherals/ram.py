@@ -5,16 +5,16 @@ import math
 class RAM(Elaboratable):
     def __init__(self, width, depth):
         if depth == 1:
-            words = 1
+            addrBits = 1
         else:
-            words = math.ceil(math.log(depth, 2))
+            addrBits = math.ceil(math.log(depth, 2))
         self.writeEnable    = Signal()
         self.readData       = Signal(width)
         self.writeData      = Signal(width)
         self.writeData      = Signal(width)
-        self.readAddr       = Signal(words)
-        self.writeAddr      = Signal(words)
-        self.memory         = Memory(width=width, depth=depth, init=None, name=None, attrs=None)
+        self.readAddr       = Signal(addrBits)
+        self.writeAddr      = Signal(addrBits)
+        self.memory         = Memory(width=width, depth=depth)
 
     def elaborate(self, platform):
         m = Module()

@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mipyfive.peripherals.ram import *
 
 createVcd = False
-outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "ram_vcd"))
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
 def test_ram_read():
     def test(self):
         global createVcd
@@ -79,8 +79,8 @@ class TestRegfile(unittest.TestCase):
     def setUp(self):
         self.dut = RAM(width=32, depth=256)
 
-    test_write  = test_ram_write(writeData=0xdeadbeef)
-    test_read   = test_ram_read()
+    test_ram_write  = test_ram_write(writeData=0xdeadbeef)
+    test_ram_read   = test_ram_read()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

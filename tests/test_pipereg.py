@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mipyfive.pipereg import *
 
 createVcd = False
-outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "pipereg_vcd"))
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
 def test_pipereg(values):
     def test(self):
         global createVcd

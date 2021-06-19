@@ -1,19 +1,7 @@
 from enum import Enum
 from nmigen import *
+from .types import *
 import math
-
-# TODO: Move this enum to "types.py"
-class AluOp(Enum):
-    ADD     = 0
-    SUB     = 1
-    AND     = 2
-    OR      = 3
-    XOR     = 4
-    SLT     = 5 # Set if Less Than
-    SLTU    = 6 # Set if Less Than (Unsigned)
-    SLL     = 7 # Shift Left Logically
-    SRL     = 8 # Shift Right Logically
-    SRA     = 9 # Shift Right Arithmetically
 
 class ALU(Elaboratable):
     def __init__(self, width):
@@ -46,9 +34,9 @@ class ALU(Elaboratable):
             m.d.comb += self.out.eq(self.in1 >> self.in2)
         with m.Elif(self.aluOp == AluOp.SRA):
             m.d.comb += self.out.eq(self.in1.as_signed() >> self.in2)
-        # Default: Invalid AluOp should just resort to ADD
+        # Default: Unknown AluOp should just resort to ADD
         with m.Else():
-            m.d.comb += self.out.eq(0)
+            m.d.comb += self.out.eq(self.in1 + self.in2)
 
         # ALU flag(s)
         with m.If(self.out == 0):

@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mipyfive.regfile import *
 
 createVcd = False
-outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "regfile_vcd"))
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
 def test_regfile_read():
     def test(self):
         global createVcd
@@ -82,8 +82,8 @@ class TestRegfile(unittest.TestCase):
     def setUp(self):
         self.dut = RegFile(width=32, regCount=32)
 
-    test_write  = test_regfile_write(writeData=0xdeadbeef)
-    test_read   = test_regfile_read()
+    test_regfile_write  = test_regfile_write(writeData=0xdeadbeef)
+    test_regfile_read   = test_regfile_read()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

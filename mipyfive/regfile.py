@@ -5,17 +5,17 @@ import math
 class RegFile(Elaboratable):
     def __init__(self, width, regCount):
         if regCount == 1:
-            regs = 1
+            addrBits = 1
         else:
-            regs = math.ceil(math.log(regCount, 2))
+            addrBits = math.ceil(math.log(regCount, 2))
         self.rs1Data        = Signal(width)
         self.rs2Data        = Signal(width)
         self.writeData      = Signal(width)
         self.writeEnable    = Signal()
         self.regArray       = Memory(width=width, depth=regCount)
-        self.rs1Addr        = Signal(regs)
-        self.rs2Addr        = Signal(regs)
-        self.writeAddr      = Signal(regs)
+        self.rs1Addr        = Signal(addrBits)
+        self.rs2Addr        = Signal(addrBits)
+        self.writeAddr      = Signal(addrBits)
 
     def elaborate(self, platform):
         m = Module()
