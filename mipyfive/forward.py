@@ -18,36 +18,24 @@ class ForwardingUnit(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        # MEM/WB Hazard
-        with m.If((self.MEM_WB_rd != self.EX_MEM_rd) & self.MEM_WB_reg_write & (self.MEM_WB_rd != 0)):
-            with m.If(self.MEM_WB_rd == self.ID_EX_rs1):
-                m.d.comb += self.fwdAluA.eq(AluForwardCtrl.MEM_WB)
-            with m.Else():
-                m.d.comb += self.fwdAluA.eq(AluForwardCtrl.NO_FWD)
-            
-            with m.If(self.MEM_WB_rd == self.ID_EX_rs2):
-                m.d.comb += self.fwdAluB.eq(AluForwardCtrl.MEM_WB)
-            with m.Else():
-                m.d.comb += self.fwdAluB.eq(AluForwardCtrl.NO_FWD)
-            
-
-        # EX/MEM Hazard
-        with m.Elif(self.EX_MEM_reg_write & (self.EX_MEM_rd != 0)):
-            with m.If(self.EX_MEM_rd == self.ID_EX_rs1):
-                m.d.comb += self.fwdAluA.eq(AluForwardCtrl.EX_MEM)
-            with m.Else():
-                m.d.comb += self.fwdAluA.eq(AluForwardCtrl.NO_FWD)
-
-            with m.If(self.EX_MEM_rd == self.ID_EX_rs2):
-                m.d.comb += self.fwdAluB.eq(AluForwardCtrl.EX_MEM)
-            with m.Else():
-                m.d.comb += self.fwdAluB.eq(AluForwardCtrl.NO_FWD)
-
-        # No Data Hazards detected
+        # Forward conditions for input A of ALU
+        with m.If((self.EX_MEM_reg_write) & (self.EX_MEM_rd != 0) & (self.EX_MEM_rd == self.ID_EX_rs1)):
+            m.d.comb += self.fwdAluA.eq(AluForwardCtrl.EX_MEM)
+        with m.Elif((self.MEM_WB_reg_write) & (self.MEM_WB_rd != 0) &
+            ~((self.EX_MEM_reg_write) & (self.EX_MEM_rd != 0) & (self.EX_MEM_rd == self.ID_EX_rs1)) &
+                (self.MEM_WB_rd == self.ID_EX_rs1)):
+                    m.d.comb += self.fwdAluA.eq(AluForwardCtrl.MEM_WB)
         with m.Else():
-            m.d.comb += [
-                self.fwdAluA.eq(AluForwardCtrl.NO_FWD),
-                self.fwdAluB.eq(AluForwardCtrl.NO_FWD)
-            ]
+            m.d.comb += self.fwdAluA.eq(AluForwardCtrl.NO_FWD)
+
+        # Forward conditions for input B of ALU
+        with m.If((self.EX_MEM_reg_write) & (self.EX_MEM_rd != 0) & (self.EX_MEM_rd == self.ID_EX_rs2)):
+            m.d.comb += self.fwdAluB.eq(AluForwardCtrl.EX_MEM)
+        with m.Elif((self.MEM_WB_reg_write) & (self.MEM_WB_rd != 0) &
+            ~((self.EX_MEM_reg_write) & (self.EX_MEM_rd != 0) & (self.EX_MEM_rd == self.ID_EX_rs2)) &
+                (self.MEM_WB_rd == self.ID_EX_rs1)):
+                    m.d.comb += self.fwdAluB.eq(AluForwardCtrl.MEM_WB)
+        with m.Else():
+            m.d.comb += self.fwdAluB.eq(AluForwardCtrl.NO_FWD)
 
         return m

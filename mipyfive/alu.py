@@ -4,11 +4,11 @@ from .utils import *
 
 class ALU(Elaboratable):
     def __init__(self, width):
-        self.aluOp = Signal(4)
+        self.aluOp = Signal(ceilLog2(len(AluOp)))
         self.in1 = Signal(width)
         self.in2 = Signal(width)
         self.out = Signal(width)
-        self.zflag = Signal(1)
+        self.zflag = Signal()
 
     def elaborate(self, platform):
         m = Module()
