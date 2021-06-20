@@ -1,4 +1,5 @@
 from nmigen import *
+from .types import *
 
 class ImmGen(Elaboratable):
     def __init__(self):
@@ -10,19 +11,18 @@ class ImmGen(Elaboratable):
         m = Module()
 
         # NOTE: Python slice notation for [a:b] == [a:(b-1)]
-        # TODO: Add Case types to "types.py"
-        # --- I-type ---
+        # --- I-types (that need sign-extension) ---
         with m.Switch(self.instruction[0:7]):
-            with m.Case(0b0000011, 0b0001111, 0b0010011, 0b1110011):
+            with m.Case(Rv32iTypes.I_Jump.value, Rv32iTypes.I_Load.value, Rv32iTypes.I_Arith):
                 m.d.comb += self.imm.eq(
                     Cat(
                         self.instruction[20:31],
                         Repl(self.instruction[31], 21)
                     )
                 )
-            
+
             # --- S-type ---
-            with m.Case(0b0100011):
+            with m.Case(Rv32iTypes.S.value):
                 m.d.comb += self.imm.eq( 
                     Cat(
                         self.instruction[7:12],
@@ -30,9 +30,9 @@ class ImmGen(Elaboratable):
                         Repl(self.instruction[31], 21)
                     )
                 )
-            
+
             # --- B-type ---
-            with m.Case(0b1100011):
+            with m.Case(Rv32iTypes.B.value):
                 m.d.comb += self.imm.eq(
                     Cat(
                         C(0),
@@ -44,7 +44,7 @@ class ImmGen(Elaboratable):
                 )
 
             # --- U-type ---
-            with m.Case(0b0010111, 0b0110111):
+            with m.Case(Rv32iTypes.U_Add.value, Rv32iTypes.U_Load.value):
                 m.d.comb += self.imm.eq(
                     Cat(
                         Repl(C(0), 12),
@@ -53,7 +53,7 @@ class ImmGen(Elaboratable):
                 )
 
             # --- J-type ---
-            with m.Case(0b1100111, 0b1101111):
+            with m.Case(Rv32iTypes.J.value):
                 m.d.comb += self.imm.eq(
                     Cat(
                         C(0),

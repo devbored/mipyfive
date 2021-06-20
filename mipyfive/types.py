@@ -5,16 +5,16 @@ class Rv32iInstructions(Enum):
     # --- R-type Instruction Formats ---
     # (funt7) | (funct3) | (opcode)
     #
-    ADD  = (0b0000000 << 10) | (0b000 << 7) | (0b0110011)
-    SUB  = (0b0100000 << 10) | (0b000 << 7) | (0b0110011)
-    SLL  = (0b0000000 << 10) | (0b001 << 7) | (0b0110011)
-    SLT  = (0b0000000 << 10) | (0b010 << 7) | (0b0110011)
-    SLTU = (0b0000000 << 10) | (0b011 << 7) | (0b0110011)
-    XOR  = (0b0000000 << 10) | (0b100 << 7) | (0b0110011)
-    SRL  = (0b0000000 << 10) | (0b101 << 7) | (0b0110011)
-    SRA  = (0b0100000 << 10) | (0b101 << 7) | (0b0110011)
-    OR   = (0b0000000 << 10) | (0b110 << 7) | (0b0110011)
-    AND  = (0b0000000 << 10) | (0b111 << 7) | (0b0110011)
+    ADD  = (0b0000000 << 25) | (0b000 << 7) | (0b0110011)
+    SUB  = (0b0100000 << 25) | (0b000 << 7) | (0b0110011)
+    SLL  = (0b0000000 << 25) | (0b001 << 7) | (0b0110011)
+    SLT  = (0b0000000 << 25) | (0b010 << 7) | (0b0110011)
+    SLTU = (0b0000000 << 25) | (0b011 << 7) | (0b0110011)
+    XOR  = (0b0000000 << 25) | (0b100 << 7) | (0b0110011)
+    SRL  = (0b0000000 << 25) | (0b101 << 7) | (0b0110011)
+    SRA  = (0b0100000 << 25) | (0b101 << 7) | (0b0110011)
+    OR   = (0b0000000 << 25) | (0b110 << 7) | (0b0110011)
+    AND  = (0b0000000 << 25) | (0b111 << 7) | (0b0110011)
 
     # --- I-type Instruction Formats ---
     # (funct3)  | (opcode)
@@ -94,7 +94,21 @@ class AluOp(Enum):
     SRL     = 0b1000 # Shift Right Logically
     SRA     = 0b1001 # Shift Right Arithmetically
 
-# ALU Input Data Hazard Forward Selection MUX Ctrl types
+# Mem2Reg mux select types
+class Mem2RegCtrl(Enum):
+    FROM_MEM = 0
+    FROM_ALU = 1
+
+class AluASrcCtrl(Enum):
+    FROM_RS1    = 0
+    FROM_ZERO   = 1
+    FROM_PC     = 2
+
+class AluBSrcCtrl(Enum):
+    FROM_RS2    = 0
+    FROM_IMM    = 1
+
+# ALU Input Data Hazard Forward Selection mux Ctrl types
 class AluForwardCtrl(Enum):
     NO_FWD  = 0b00
     MEM_WB  = 0b01
