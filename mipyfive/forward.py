@@ -4,7 +4,7 @@ from .types import *
 
 # Forwarding Unit to resolve Data Hazards
 class ForwardingUnit(Elaboratable):
-    def __init__(self, width, regCount):
+    def __init__(self, regCount):
         addrBits                = ceilLog2(regCount)
         self.ID_EX_rs1          = Signal(addrBits)
         self.ID_EX_rs2          = Signal(addrBits)

@@ -77,7 +77,7 @@ class Controller(Elaboratable):
                         self.mem2Reg.eq(Mem2RegCtrl.FROM_MEM.value)
                     ]
                 with m.Else():
-                    with m.Switch(Cat(opcode, funct3)):
+                    with m.Switch(Cat(Repl(C(0), len(funct7)), opcode, funct3)):
                         with m.Case(Rv32iInstructions.JALR.value, Rv32iInstructions.ADDI.value):
                             m.d.comb += [
                                 self.aluOp.eq(AluOp.ADD.value),
@@ -108,21 +108,18 @@ class Controller(Elaboratable):
                                 self.aluOp.eq(AluOp.AND.value),
                                 self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
                             ]
-                        with m.Case(Rv32iInstructions.SLLI.value):
-                            m.d.comb += [
-                                self.aluOp.eq(AluOp.SLL.value),
-                                self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
-                            ]
-                        with m.Case(Rv32iInstructions.SRLI.value):
-                            m.d.comb += [
-                                self.aluOp.eq(AluOp.SRL.value),
-                                self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
-                            ]
-                        with m.Case(Rv32iInstructions.SRAI.value):
-                            m.d.comb += [
-                                self.aluOp.eq(AluOp.SRA.value),
-                                self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
-                            ]
+                        with m.Case(Rv32iInstructions.SLLI.value, Rv32iInstructions.SRLI.value,
+                            Rv32iInstructions.SRAI.value):
+                                m.d.comb += self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
+                                with m.Switch(Cat(opcode, funct3, funct7)):
+                                    with m.Case(Rv32iInstructions.SLLI.value):
+                                        m.d.comb += self.aluOp.eq(AluOp.SLL.value)
+                                    with m.Case(Rv32iInstructions.SRLI.value):
+                                        m.d.comb += self.aluOp.eq(AluOp.SRL.value)
+                                    with m.Case(Rv32iInstructions.SRAI.value):
+                                        m.d.comb += self.aluOp.eq(AluOp.SRA.value)
+                                    with m.Default():
+                                        pass # TODO: Handle invalid instruction here later...
                         with m.Default():
                             pass # TODO: Handle invalid instruction here later...
 
