@@ -7,6 +7,7 @@ from nmigen import *
 from nmigen.back.pysim import *
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from mipyfive.utils import *
 from mipyfive.immgen import *
 
 createVcd = False
@@ -19,7 +20,10 @@ def test_immgen(instruction, expectedImm):
         def process():
             yield self.dut.instruction.eq(instruction)
             yield Delay(1e-6)
-            self.assertEqual((yield self.dut.imm), expectedImm)
+            if expectedImm < 0:
+                self.assertEqual((yield self.dut.imm), expectedImm & 0xffffffff)
+            else:
+                self.assertEqual((yield self.dut.imm), expectedImm)
         sim.add_process(process)
         if createVcd:
             if not os.path.exists(outputDir):
@@ -35,13 +39,14 @@ class TestImmgen(unittest.TestCase):
     def setUp(self):
         self.dut = ImmGen()
 
-    test_imm1  = test_immgen(0x01900293, 0x19)
-    test_imm2  = test_immgen(0xff500313, 0xfffffff5)
-    test_imm3  = test_immgen(0x00602223, 0x4)
-    test_imm4  = test_immgen(0x004003b7, 0x400000)
-    test_imm5  = test_immgen(0x00306393, 0x3)
-    test_imm6  = test_immgen(0x008004ef, 0x8)
-    test_imm7  = test_immgen(0xfe0002e3, 0xffffffe4)
+    randImm12 = random.randint(-2048, 2047)
+    randImm20 = random.randint(-524288, 524287)
+
+    test_imm_Itype  = test_immgen(asm2binI("lw", "x5", str(randImm12), "x6"), randImm12)
+    test_imm_Stype  = test_immgen(asm2binS("sb", "x1", str(randImm12), "x11"), randImm12)
+    test_imm_Btype  = test_immgen(asm2binB("bne", "x3", str(randImm12), "x3"), randImm12 & 0xfffffffe)
+    test_imm_Utype  = test_immgen(asm2binU("lui", "x10", str(randImm20)), randImm20 & 0xfffff000)
+    test_imm_Jtype  = test_immgen(asm2binJ("jal", "x17", str(randImm20)), randImm20 & 0xfffffffe)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

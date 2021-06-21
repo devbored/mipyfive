@@ -69,7 +69,7 @@ def test_forward(rs1, rs2, EX_MEM_rd, MEM_WB_rd, EX_MEM_reg_write, MEM_WB_reg_wr
     return test
 
 # Define unit tests
-class TestImmgen(unittest.TestCase):
+class TestForward(unittest.TestCase):
     def setUp(self):
         self.dut = ForwardingUnit(width=32, regCount=32)
 

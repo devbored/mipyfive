@@ -1,43 +1,27 @@
 import os
 import sys
-import random
 import argparse
 import unittest
 from nmigen import *
 from nmigen.back.pysim import *
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from mipyfive.pipereg import *
+from mipyfive.utils import *
+from mipyfive.controller import *
 
 createVcd = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
-def test_pipereg(values):
+def test_controller(instruction):
     def test(self):
         global createVcd
         global outputDir
         sim = Simulator(self.dut)
-        
-        # Begin test
         def process():
-            for val in values:
-                yield self.dut.din.eq(val)
-                yield self.dut.en.eq(0)
-                yield self.dut.reg[0].eq(0)
-                yield Tick()
-
-                yield self.dut.en.eq(1)
-                for j in range(2):
-                    yield Tick()
-                self.assertEqual((yield self.dut.dout), val)
-
-                # NOTE: Toggling/testing the reset signal in simulation is currently non-working in nMigen...
-                #yield self.dut.rst.eq(1)
-                #for j in range(2):
-                #    yield Tick()
-                #self.assertEqual((yield self.dut.dout), 0)
-        
-        sim.add_clock(1e-6)
-        sim.add_sync_process(process)
+            yield self.dut.instruction.eq(instruction)
+            yield Delay(1e-6)
+            print(f"Instruction: {instruction}")
+            #self.assertEqual((yield self.dut.imm), expectedImm)
+        sim.add_process(process)
         if createVcd:
             if not os.path.exists(outputDir):
                 os.makedirs(outputDir)
@@ -48,11 +32,11 @@ def test_pipereg(values):
     return test
 
 # Define unit tests
-class TestPipereg(unittest.TestCase):
+class TestController(unittest.TestCase):
     def setUp(self):
-        self.dut = PipeReg(32)
+        self.dut = Controller()
 
-    test_pipereg = test_pipereg([0xdeadbeef, 0x5a5a5a5a, 0x0f0f0f0f])
+    test_imm1  = test_controller(asm2binR("add", "x5", "x0", "x2"))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

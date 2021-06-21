@@ -75,7 +75,7 @@ def test_ram_write(writeData):
     return test
 
 # Define unit tests
-class TestRegfile(unittest.TestCase):
+class TestRam(unittest.TestCase):
     def setUp(self):
         self.dut = RAM(width=32, depth=256)
 

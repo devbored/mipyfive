@@ -5,7 +5,6 @@ class ImmGen(Elaboratable):
     def __init__(self):
         self.instruction        = Signal(32)
         self.imm                = Signal(32)
-        self.opcodeTypeTable    = Array()
 
     def elaborate(self, platform):
         m = Module()
