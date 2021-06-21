@@ -31,7 +31,6 @@ class Controller(Elaboratable):
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_RS2.value),
-                    #self.aluOp.eq(AluOp.XOR.value),
                     self.branch.eq(0)
                 ]
 
