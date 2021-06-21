@@ -42,11 +42,11 @@ class TestImmgen(unittest.TestCase):
     randImm12 = random.randint(-2048, 2047)
     randImm20 = random.randint(-524288, 524287)
 
-    test_imm_Itype  = test_immgen(asm2binI("lw", "x5", str(randImm12), "x6"), randImm12)
-    test_imm_Stype  = test_immgen(asm2binS("sb", "x1", str(randImm12), "x11"), randImm12)
-    test_imm_Btype  = test_immgen(asm2binB("bne", "x3", str(randImm12), "x3"), randImm12 & 0xfffffffe)
-    test_imm_Utype  = test_immgen(asm2binU("lui", "x10", str(randImm20)), randImm20 & 0xfffff000)
-    test_imm_Jtype  = test_immgen(asm2binJ("jal", "x17", str(randImm20)), randImm20 & 0xfffffffe)
+    test_imm_I_type  = test_immgen(asm2binI("lw", "x5", str(randImm12), "x6"), randImm12)
+    test_imm_S_type  = test_immgen(asm2binS("sb", "x1", str(randImm12), "x11"), randImm12)
+    test_imm_B_type  = test_immgen(asm2binB("bne", "x3", str(randImm12), "x3"), randImm12 & 0xfffffffe)
+    test_imm_U_type  = test_immgen(asm2binU("lui", "x10", str(randImm20)), randImm20 & 0xfffff000)
+    test_imm_J_type  = test_immgen(asm2binJ("jal", "x17", str(randImm20)), randImm20 & 0xfffffffe)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

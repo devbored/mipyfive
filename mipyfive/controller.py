@@ -2,6 +2,8 @@ from nmigen import *
 from .types import *
 from .utils import *
 
+# TODO: Look into a ROM-based microcoded controller unit
+#       (Compare with this hard-wired combinational circuit)
 class Controller(Elaboratable):
     def __init__(self):
         self.instruction    = Signal(32)
@@ -15,9 +17,9 @@ class Controller(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        opcode      = self.instruction[0:7]
-        funct3      = self.instruction[12:15]
-        funct7      = self.instruction[25:32] 
+        opcode = self.instruction[0:7]
+        funct3 = self.instruction[12:15]
+        funct7 = self.instruction[25:32]
 
         # Get instruction type via opcode
         with m.Switch(opcode):
@@ -29,6 +31,7 @@ class Controller(Elaboratable):
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_RS2.value),
+                    #self.aluOp.eq(AluOp.XOR.value),
                     self.branch.eq(0)
                 ]
 
@@ -42,17 +45,17 @@ class Controller(Elaboratable):
                         m.d.comb += self.aluOp.eq(AluOp.SLL.value)
                     with m.Case(Rv32iInstructions.SLT.value):
                         m.d.comb += self.aluOp.eq(AluOp.SLT.value)
-                    with m.Case(Rv32iInstructions.ADD.value):
-                        m.d.comb += self.aluOp.eq(AluOp.SLTU.value)
                     with m.Case(Rv32iInstructions.SLTU.value):
-                        m.d.comb += self.aluOp.eq(AluOp.XOR.value)
+                        m.d.comb += self.aluOp.eq(AluOp.SLTU.value)
                     with m.Case(Rv32iInstructions.XOR.value):
-                        m.d.comb += self.aluOp.eq(AluOp.ADD.value)
+                        m.d.comb += self.aluOp.eq(AluOp.XOR.value)
                     with m.Case(Rv32iInstructions.SRL.value):
+                        m.d.comb += self.aluOp.eq(AluOp.SRL.value)
+                    with m.Case(Rv32iInstructions.SRA.value):
                         m.d.comb += self.aluOp.eq(AluOp.SRA.value)
                     with m.Case(Rv32iInstructions.OR.value):
                         m.d.comb += self.aluOp.eq(AluOp.OR.value)
-                    with m.Case(Rv32iInstructions.ADD.value):
+                    with m.Case(Rv32iInstructions.AND.value):
                         m.d.comb += self.aluOp.eq(AluOp.AND.value)
                     with m.Default():
                         pass # TODO: Handle invalid instruction here later...
@@ -63,13 +66,9 @@ class Controller(Elaboratable):
                     self.branch.eq(0),
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
+                    self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
                 ]
-
-                with m.If(opcode == Rv32iTypes.I_Jump.value):
-                    m.d.comb += self.aluAsrc.eq(AluASrcCtrl.FROM_ZERO.value)
-                with m.Else():
-                    m.d.comb += self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value)
 
                 with m.If(opcode == Rv32iTypes.I_Load.value):
                     m.d.comb += [
@@ -77,7 +76,7 @@ class Controller(Elaboratable):
                         self.mem2Reg.eq(Mem2RegCtrl.FROM_MEM.value)
                     ]
                 with m.Else():
-                    with m.Switch(Cat(Repl(C(0), len(funct7)), opcode, funct3)):
+                    with m.Switch(Cat(opcode, funct3, Repl(C(0), len(funct7)))):
                         with m.Case(Rv32iInstructions.JALR.value, Rv32iInstructions.ADDI.value):
                             m.d.comb += [
                                 self.aluOp.eq(AluOp.ADD.value),
@@ -111,15 +110,12 @@ class Controller(Elaboratable):
                         with m.Case(Rv32iInstructions.SLLI.value, Rv32iInstructions.SRLI.value,
                             Rv32iInstructions.SRAI.value):
                                 m.d.comb += self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
-                                with m.Switch(Cat(opcode, funct3, funct7)):
-                                    with m.Case(Rv32iInstructions.SLLI.value):
-                                        m.d.comb += self.aluOp.eq(AluOp.SLL.value)
-                                    with m.Case(Rv32iInstructions.SRLI.value):
-                                        m.d.comb += self.aluOp.eq(AluOp.SRL.value)
-                                    with m.Case(Rv32iInstructions.SRAI.value):
-                                        m.d.comb += self.aluOp.eq(AluOp.SRA.value)
-                                    with m.Default():
-                                        pass # TODO: Handle invalid instruction here later...
+                                with m.If(funct3 == 0b001):
+                                    m.d.comb += self.aluOp.eq(AluOp.SLL.value)
+                                with m.Elif((funct3 == 0b101) & (funct7 == 0b0100000)):
+                                    m.d.comb += self.aluOp.eq(AluOp.SRA.value)
+                                with m.Else():
+                                    m.d.comb += self.aluOp.eq(AluOp.SRL.value)
                         with m.Default():
                             pass # TODO: Handle invalid instruction here later...
 
@@ -156,7 +152,7 @@ class Controller(Elaboratable):
                     self.memWrite.eq(0),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
-                    self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
+                    self.aluBsrc.eq(AluBSrcCtrl.FROM_RS2.value)
                 ]
 
                 with m.Switch(Cat(opcode, funct3)):
