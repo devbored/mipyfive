@@ -100,9 +100,9 @@ class Mem2RegCtrl(Enum):
     FROM_ALU = 1
 
 class AluASrcCtrl(Enum):
-    FROM_RS1    = 0
-    FROM_ZERO   = 1
-    FROM_PC     = 2
+    FROM_RS1    = 0b00
+    FROM_ZERO   = 0b01
+    FROM_PC     = 0b10
 
 class AluBSrcCtrl(Enum):
     FROM_RS2    = 0
@@ -113,3 +113,16 @@ class AluForwardCtrl(Enum):
     NO_FWD  = 0b00
     MEM_WB  = 0b01
     EX_MEM  = 0b10
+
+# Load-Store Unit control types
+class LSUStoreCtrl(Enum):
+    LSU_SB = 0b00
+    LSU_SH = 0b01
+    LSU_SW = 0b10
+
+class LSULoadCtrl(Enum):
+    LSU_LB  = 0b000
+    LSU_LH  = 0b001
+    LSU_LW  = 0b010
+    LSU_LBU = 0b011
+    LSU_LHU = 0b100
