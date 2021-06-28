@@ -71,7 +71,7 @@ def test_forward(rs1, rs2, EX_MEM_rd, MEM_WB_rd, EX_MEM_reg_write, MEM_WB_reg_wr
 # Define unit tests
 class TestForward(unittest.TestCase):
     def setUp(self):
-        self.dut = ForwardingUnit(width=32, regCount=32)
+        self.dut = ForwardingUnit(regCount=32)
 
     # Start with a random test
     test_fwd_random = test_forward(

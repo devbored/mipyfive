@@ -10,6 +10,7 @@ class Controller(Elaboratable):
         self.aluOp          = Signal(ceilLog2(len(AluOp)))
         self.regWrite       = Signal()
         self.memWrite       = Signal()
+        self.memRead        = Signal()
         self.mem2Reg        = Signal()
         self.aluAsrc        = Signal(2)
         self.aluBsrc        = Signal()
@@ -28,6 +29,7 @@ class Controller(Elaboratable):
                 m.d.comb += [
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
+                    self.memRead.eq(0),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_RS2.value),
@@ -71,10 +73,12 @@ class Controller(Elaboratable):
 
                 with m.If(opcode == Rv32iTypes.I_Load.value):
                     m.d.comb += [
+                        self.memRead.eq(1),
                         self.aluOp.eq(AluOp.ADD.value),
                         self.mem2Reg.eq(Mem2RegCtrl.FROM_MEM.value)
                     ]
                 with m.Else():
+                    m.d.comb += self.memRead.eq(0)
                     with m.Switch(Cat(opcode, funct3, Repl(C(0), len(funct7)))):
                         with m.Case(Rv32iInstructions.JALR.value, Rv32iInstructions.ADDI.value):
                             m.d.comb += [
@@ -125,6 +129,7 @@ class Controller(Elaboratable):
                     self.branch.eq(0),
                     self.regWrite.eq(0),
                     self.memWrite.eq(0),
+                    self.memRead.eq(0),
                     self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
@@ -137,6 +142,7 @@ class Controller(Elaboratable):
                     self.branch.eq(0),
                     self.regWrite.eq(0),
                     self.memWrite.eq(1),
+                    self.memRead.eq(0),
                     self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
@@ -149,6 +155,7 @@ class Controller(Elaboratable):
                     self.branch.eq(1),
                     self.regWrite.eq(0),
                     self.memWrite.eq(0),
+                    self.memRead.eq(0),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_RS2.value)
@@ -170,6 +177,7 @@ class Controller(Elaboratable):
                     self.branch.eq(0),
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
+                    self.memRead.eq(0),
                     self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
@@ -189,6 +197,7 @@ class Controller(Elaboratable):
                     self.branch.eq(0),
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
+                    self.memRead.eq(0),
                     self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_ZERO.value),
