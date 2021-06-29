@@ -23,10 +23,6 @@ class ALU(Elaboratable):
             m.d.comb += self.out.eq(self.in1 | self.in2)
         with m.Elif(self.aluOp == AluOp.XOR):
             m.d.comb += self.out.eq(self.in1 ^ self.in2)
-        with m.Elif(self.aluOp == AluOp.SLT):
-            m.d.comb += self.out.eq(self.in1.as_signed() < self.in2.as_signed())
-        with m.Elif(self.aluOp == AluOp.SLTU):
-            m.d.comb += self.out.eq(self.in1 < self.in2)
         with m.Elif(self.aluOp == AluOp.SLL):
             m.d.comb += self.out.eq(self.in1 << self.in2[:ceilLog2(self.in2.width)])
         with m.Elif(self.aluOp == AluOp.SRL):

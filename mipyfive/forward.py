@@ -2,7 +2,6 @@ from nmigen import *
 from .utils import *
 from .types import *
 
-# Forwarding Unit to resolve Data Hazards
 class ForwardingUnit(Elaboratable):
     def __init__(self, regCount):
         addrBits                = ceilLog2(regCount)

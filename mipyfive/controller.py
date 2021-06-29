@@ -1,3 +1,4 @@
+from functools import cmp_to_key
 from nmigen import *
 from .types import *
 from .utils import *
@@ -8,6 +9,7 @@ class Controller(Elaboratable):
     def __init__(self):
         self.instruction    = Signal(32)
         self.aluOp          = Signal(ceilLog2(len(AluOp)))
+        self.cmpType        = Signal(ceilLog2(len(CompareTypes)))
         self.regWrite       = Signal()
         self.memWrite       = Signal()
         self.memRead        = Signal()
@@ -30,6 +32,7 @@ class Controller(Elaboratable):
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
                     self.memRead.eq(0),
+                    self.cmpType.eq(CompareTypes.EQUAL.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_RS2.value),
@@ -44,10 +47,6 @@ class Controller(Elaboratable):
                         m.d.comb += self.aluOp.eq(AluOp.SUB.value)
                     with m.Case(Rv32iInstructions.SLL.value):
                         m.d.comb += self.aluOp.eq(AluOp.SLL.value)
-                    with m.Case(Rv32iInstructions.SLT.value):
-                        m.d.comb += self.aluOp.eq(AluOp.SLT.value)
-                    with m.Case(Rv32iInstructions.SLTU.value):
-                        m.d.comb += self.aluOp.eq(AluOp.SLTU.value)
                     with m.Case(Rv32iInstructions.XOR.value):
                         m.d.comb += self.aluOp.eq(AluOp.XOR.value)
                     with m.Case(Rv32iInstructions.SRL.value):
@@ -83,30 +82,36 @@ class Controller(Elaboratable):
                         with m.Case(Rv32iInstructions.JALR.value, Rv32iInstructions.ADDI.value):
                             m.d.comb += [
                                 self.aluOp.eq(AluOp.ADD.value),
+                                self.cmpType.eq(CompareTypes.EQUAL.value),
                                 self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
                             ]
                         with m.Case(Rv32iInstructions.SLTI.value):
                             m.d.comb += [
-                                self.aluOp.eq(AluOp.SLT.value),
+                                self.aluOp.eq(AluOp.ADD.value),
+                                self.cmpType.eq(CompareTypes.LESS_THAN.value),
                                 self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
                             ]
                         with m.Case(Rv32iInstructions.SLTIU.value):
                             m.d.comb += [
-                                self.aluOp.eq(AluOp.SLTU.value),
+                                self.aluOp.eq(AluOp.ADD.value),
+                                self.cmpType.eq(CompareTypes.LESS_THAN_U.value),
                                 self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
                             ]
                         with m.Case(Rv32iInstructions.XORI.value):
                             m.d.comb += [
+                                self.cmpType.eq(CompareTypes.EQUAL.value),
                                 self.aluOp.eq(AluOp.XOR.value),
                                 self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
                             ]
                         with m.Case(Rv32iInstructions.ORI.value):
                             m.d.comb += [
+                                self.cmpType.eq(CompareTypes.EQUAL.value),
                                 self.aluOp.eq(AluOp.OR.value),
                                 self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
                             ]
                         with m.Case(Rv32iInstructions.ANDI.value):
                             m.d.comb += [
+                                self.cmpType.eq(CompareTypes.EQUAL.value),
                                 self.aluOp.eq(AluOp.AND.value),
                                 self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
                             ]
@@ -114,11 +119,23 @@ class Controller(Elaboratable):
                             Rv32iInstructions.SRAI.value):
                                 m.d.comb += self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
                                 with m.If(funct3 == 0b001):
-                                    m.d.comb += self.aluOp.eq(AluOp.SLL.value)
+                                    m.d.comb += [
+                                        self.aluOp.eq(AluOp.SLL.value),
+                                        self.cmpType.eq(CompareTypes.EQUAL.value),
+                                        self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
+                                    ]
                                 with m.Elif((funct3 == 0b101) & (funct7 == 0b0100000)):
-                                    m.d.comb += self.aluOp.eq(AluOp.SRA.value)
+                                    m.d.comb += [
+                                        self.aluOp.eq(AluOp.SRA.value),
+                                        self.cmpType.eq(CompareTypes.EQUAL.value),
+                                        self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
+                                    ]
                                 with m.Else():
-                                    m.d.comb += self.aluOp.eq(AluOp.SRL.value)
+                                    m.d.comb += [
+                                        self.aluOp.eq(AluOp.SRL.value),
+                                        self.cmpType.eq(CompareTypes.EQUAL.value),
+                                        self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
+                                    ]
                         with m.Default():
                             pass # TODO: Handle invalid instruction here later...
 
@@ -130,6 +147,7 @@ class Controller(Elaboratable):
                     self.regWrite.eq(0),
                     self.memWrite.eq(0),
                     self.memRead.eq(0),
+                    self.cmpType.eq(CompareTypes.EQUAL.value),
                     self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
@@ -143,6 +161,7 @@ class Controller(Elaboratable):
                     self.regWrite.eq(0),
                     self.memWrite.eq(1),
                     self.memRead.eq(0),
+                    self.cmpType.eq(CompareTypes.EQUAL.value),
                     self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
@@ -156,18 +175,25 @@ class Controller(Elaboratable):
                     self.regWrite.eq(0),
                     self.memWrite.eq(0),
                     self.memRead.eq(0),
+                    self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_RS2.value)
                 ]
 
                 with m.Switch(Cat(opcode, funct3)):
-                    with m.Case(Rv32iInstructions.BEQ.value, Rv32iInstructions.BNE.value):
-                        m.d.comb += self.aluOp.eq(AluOp.XOR.value)
-                    with m.Case(Rv32iInstructions.BLT.value, Rv32iInstructions.BGE.value):
-                        m.d.comb += self.aluOp.eq(AluOp.SLT.value)
-                    with m.Case(Rv32iInstructions.BLTU.value, Rv32iInstructions.BGEU.value):
-                        m.d.comb += self.aluOp.eq(AluOp.SLTU.value)
+                    with m.Case(Rv32iInstructions.BEQ.value):
+                        m.d.comb += self.cmpType.eq(CompareTypes.EQUAL.value)
+                    with m.Case(Rv32iInstructions.BNE.value):
+                        m.d.comb += self.cmpType.eq(CompareTypes.NOT_EQUAL.value)
+                    with m.Case(Rv32iInstructions.BLT.value):
+                        m.d.comb += self.cmpType.eq(CompareTypes.LESS_THAN.value)
+                    with m.Case(Rv32iInstructions.BLTU.value):
+                        m.d.comb += self.cmpType.eq(CompareTypes.LESS_THAN_U.value)
+                    with m.Case(Rv32iInstructions.BGE.value):
+                        m.d.comb += self.cmpType.eq(CompareTypes.GREATER_EQUAL.value)
+                    with m.Case(Rv32iInstructions.BGEU.value):
+                        m.d.comb += self.cmpType.eq(CompareTypes.GREATER_EQUAL_U.value)
                     with m.Default():
                         pass # TODO: Handle invalid instruction here later...
 
@@ -178,6 +204,7 @@ class Controller(Elaboratable):
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
                     self.memRead.eq(0),
+                    self.cmpType.eq(CompareTypes.EQUAL.value),
                     self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
@@ -198,6 +225,7 @@ class Controller(Elaboratable):
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
                     self.memRead.eq(0),
+                    self.cmpType.eq(CompareTypes.EQUAL.value),
                     self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_ZERO.value),

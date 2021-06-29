@@ -1,7 +1,6 @@
 from nmigen import *
 from .utils import *
 
-# Hazard Detection Unit
 class HazardUnit(Elaboratable):
     def __init__(self, regCount):
         addrBits                = ceilLog2(regCount)

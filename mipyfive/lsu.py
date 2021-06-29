@@ -1,7 +1,7 @@
 from nmigen import *
 from .types import *
 
-# Load-Store Unit - really only does sign/zero extensions at the moment
+# Load-Store Unit really only does sign/zero extensions at the moment
 class LSU(Elaboratable):
     def __init__(self, width):
         self.lDataIn    = Signal(width)
