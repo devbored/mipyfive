@@ -59,7 +59,7 @@ def test_store(sDin, sCtrl, sDoutExpected):
     return test
 
 # Define unit tests
-class TestForward(unittest.TestCase):
+class TestLSU(unittest.TestCase):
     def setUp(self):
         self.dut = LSU(width=32)
 

@@ -126,3 +126,17 @@ class LSULoadCtrl(Enum):
     LSU_LW  = 0b010
     LSU_LBU = 0b011
     LSU_LHU = 0b100
+
+# Regfile Output Control Hazard Forward Selection mux Ctrl types
+class RegfileOutForwardCtrl(Enum):
+    NO_FWD  = 0
+    EX_MEM  = 1
+
+# Compare unit types
+class CompareTypes(Enum):
+    EQUAL           = 0b000
+    NOT_EQUAL       = 0b001
+    LESS_THAN       = 0b010
+    LESS_THAN_U     = 0b011
+    GREATER_EQUAL   = 0b100
+    GREATER_EQUAL_U = 0b101

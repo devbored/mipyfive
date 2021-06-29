@@ -12,16 +12,16 @@ from mipyfive.types import *
 from mipyfive.hazard import *
 
 def expectedHazardResolution(IF_ID_rs1, IF_ID_rs2, ID_EX_memRead, ID_EX_rd):
-    PCwrite     = 1
-    IF_ID_write = 1
-    ctrlBubble  = 0
+    IF_stall     = 1
+    IF_ID_stall  = 1
+    ID_EX_flush  = 0
 
     if ID_EX_memRead and ((ID_EX_rd == IF_ID_rs1) or (ID_EX_rd == IF_ID_rs2)):
-        PCwrite     = 0
-        IF_ID_write = 0
-        ctrlBubble  = 1
+        IF_stall     = 0
+        IF_ID_stall  = 0
+        ID_EX_flush  = 1
     
-    return PCwrite, IF_ID_write, ctrlBubble
+    return IF_stall, IF_ID_stall, ID_EX_flush
 
 createVcd = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
@@ -37,12 +37,12 @@ def test_hazard(IF_ID_rs1, IF_ID_rs2, ID_EX_memRead, ID_EX_rd):
             yield self.dut.IF_ID_rs2.eq(IF_ID_rs2)
             yield Delay(1e-6)
 
-            PCwrite, IF_ID_write, ctrlBubble = expectedHazardResolution(
+            IF_stall, IF_ID_stall, ID_EX_flush = expectedHazardResolution(
                 IF_ID_rs1, IF_ID_rs2, ID_EX_memRead, ID_EX_rd
             )
-            self.assertEqual((yield self.dut.PCwrite), PCwrite)
-            self.assertEqual((yield self.dut.IF_ID_write), IF_ID_write)
-            self.assertEqual((yield self.dut.ctrlBubble), ctrlBubble)
+            self.assertEqual((yield self.dut.IF_stall), IF_stall)
+            self.assertEqual((yield self.dut.IF_ID_stall), IF_ID_stall)
+            self.assertEqual((yield self.dut.ID_EX_flush), ID_EX_flush)
         sim.add_process(process)
         if createVcd:
             if not os.path.exists(outputDir):
@@ -54,7 +54,7 @@ def test_hazard(IF_ID_rs1, IF_ID_rs2, ID_EX_memRead, ID_EX_rd):
     return test
 
 # Define unit tests
-class TestForward(unittest.TestCase):
+class TestHazard(unittest.TestCase):
     def setUp(self):
         self.dut = HazardUnit(regCount=32)
 
