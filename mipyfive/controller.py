@@ -1,4 +1,3 @@
-from functools import cmp_to_key
 from nmigen import *
 from .types import *
 from .utils import *

@@ -2,6 +2,7 @@ from nmigen import *
 from .types import *
 
 class ImmGen(Elaboratable):
+    # TODO: Allow for arbitrary width
     def __init__(self):
         self.instruction        = Signal(32)
         self.imm                = Signal(32)
