@@ -50,7 +50,8 @@ def test_pipereg(values):
 # Define unit tests
 class TestPipereg(unittest.TestCase):
     def setUp(self):
-        self.dut = PipeReg(32)
+        print()
+        self.dut = PipeReg(width=32)
 
     test_pipereg = test_pipereg([0xdeadbeef, 0x5a5a5a5a, 0x0f0f0f0f])
 

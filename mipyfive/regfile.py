@@ -3,15 +3,15 @@ from .utils import *
 
 class RegFile(Elaboratable):
     def __init__(self, width, regCount):
-        addrBits            = ceilLog2(regCount)
+        self.addrBits       = ceilLog2(regCount)
         self.rs1Data        = Signal(width)
         self.rs2Data        = Signal(width)
         self.writeData      = Signal(width)
         self.writeEnable    = Signal()
         self.regArray       = Memory(width=width, depth=regCount)
-        self.rs1Addr        = Signal(addrBits)
-        self.rs2Addr        = Signal(addrBits)
-        self.writeAddr      = Signal(addrBits)
+        self.rs1Addr        = Signal(self.addrBits)
+        self.rs2Addr        = Signal(self.addrBits)
+        self.writeAddr      = Signal(self.addrBits)
 
     def elaborate(self, platform):
         m = Module()
