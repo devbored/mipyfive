@@ -32,12 +32,8 @@ class MipyfiveCore(Elaboratable):
         self.control    = Controller()
 
         # Create pipeline registers
-        self.IF_ID = PipeReg(
-            pc=self.dataWidth,
-            pc_4=self.dataWidth
-        )
-        self.IF_ID_pc     = self.IF_ID.doutSlice("pc")
-        self.IF_ID_pc_4   = self.IF_ID.doutSlice("pc_4")
+        self.IF_ID = PipeReg(pc=self.dataWidth)
+        self.IF_ID_pc = self.IF_ID.doutSlice("pc")
 
         self.ID_EX = PipeReg(
             aluOp=len(AluOp),
@@ -104,11 +100,10 @@ class MipyfiveCore(Elaboratable):
         self.MEM_WB_aluOut      = self.MEM_WB.doutSlice("aluOut")
         self.MEM_WB_rdAddr      = self.MEM_WB.doutSlice("rdAddr")
 
-        # -----------------------
-
     def elaborate(self, platform):
         m = Module()
         PC = Signal(32, reset=0)
+        mem2RegWire = Signal(self.dataWidth)
 
         # Instantiate Submodules
         m.submodules.alu        = self.alu
@@ -127,21 +122,86 @@ class MipyfiveCore(Elaboratable):
         # Internal logic
         takeBranch = self.control.branch & self.compare.isTrue
 
+        # Hazard and Forwarding setup/logic
+        m.d.comb += [
+            # Hazard
+            self.hazard.ID_EX_memRead.eq(self.ID_EX_memRead),
+            self.hazard.Branch.eq(self.control.branch),
+            self.hazard.EX_MEM_memToReg.eq(self.EX_MEM_mem2Reg),
+            self.hazard.ID_EX_regWrite.eq(self.ID_EX_regWrite),
+            self.hazard.ID_EX_rd.eq(self.ID_EX_rdAddr),
+            self.hazard.EX_MEM_rd.eq(self.EX_MEM_rdAddr),
+            self.hazard.IF_ID_rs1.eq(self.instruction[15:20]),
+            self.hazard.IF_ID_rs2.eq(self.instruction[20:25]),
+            # Forward
+            self.forward.IF_ID_rs1.eq(self.instruction[15:20]),
+            self.forward.ID_EX_rs1.eq(self.ID_EX_rs1Addr),
+            self.forward.IF_ID_rs2.eq(self.instruction[20:25]),
+            self.forward.ID_EX_rs2.eq(self.ID_EX_rs2Addr),
+            self.forward.EX_MEM_rd.eq(self.EX_MEM_rdAddr),
+            self.forward.MEM_WB_rd.eq(self.MEM_WB_rdAddr),
+            self.forward.EX_MEM_reg_write.eq(self.EX_MEM_regWrite),
+            self.forward.MEM_WB_reg_write.eq(self.MEM_WB_regWrite)
+        ]
+
         # --- Fetch ---
         m.d.comb += [
-         self.IF_ID.rst.eq(takeBranch),
-         self.IF_ID.en.eq(self.hazard.IF_ID_stall),
-         self.IF_ID.din.eq(Cat(PC, (PC + 4)))
+            # Pipereg
+            self.IF_ID.rst.eq(takeBranch),
+            self.IF_ID.en.eq(self.hazard.IF_ID_stall), # TODO: Fix the awkward stall logic
+            self.IF_ID.din.eq(PC),
+            # PC
+            self.PCout.eq(PC)
         ]
         with m.If(takeBranch):
-            m.d.sync += PC.eq(Cat(PC, (PC + 4)) + (self.immgen.imm << 2))
-        with m.Elif(self.hazard.IF_stall):
+            m.d.sync += PC.eq(PC + (self.immgen.imm << 1))
+        with m.Elif(~self.hazard.IF_stall): # TODO: Fix the awkward stall logic
             m.d.sync += PC.eq(PC)
         with m.Else():
             m.d.sync += PC.eq(PC + 4)
 
         # --- Decode ---
-        # ...
+        rs1Data = Mux(self.forward.fwdAluA, self.EX_MEM_aluOut, self.regfile.rs1Data)
+        rs2Data = Mux(self.forward.fwdAluB, self.EX_MEM_aluOut, self.regfile.rs2Data)
+
+        m.d.comb += [
+            # Pipereg
+            self.ID_EX.rst.eq(self.hazard.ID_EX_flush),
+            self.ID_EX.en.eq(1),
+            self.ID_EX.din.eq(
+                Cat(
+                    self.control.aluOp,
+                    self.control.lsuLoadCtrl,
+                    self.control.lsuStoreCtrl,
+                    self.control.regWrite,
+                    self.control.memWrite,
+                    self.control.memRead,
+                    self.control.mem2Reg,
+                    self.control.aluAsrc,
+                    self.control.aluBsrc,
+                    rs1Data,
+                    rs2Data,
+                    self.immgen.imm,
+                    self.instruction[15:20], # rs1
+                    self.instruction[20:25], # rs2
+                    self.instruction[7:12]   # rd
+                )
+            ),
+            # Immgen
+            self.immgen.instruction.eq(self.instruction),
+            # Compare
+            self.compare.in1.eq(rs1Data),
+            self.compare.in2.eq(rs2Data),
+            self.compare.cmpType.eq(self.control.cmpType),
+            # Control
+            self.control.instruction.eq(self.instruction),
+            # Regfile
+            self.regfile.rs1Addr.eq(self.instruction[15:20]),
+            self.regfile.rs2Addr.eq(self.instruction[20:25]),
+            self.regfile.writeData.eq(mem2RegWire),
+            self.regfile.writeEnable.eq(self.MEM_WB_regWrite),
+            self.regfile.writeAddr.eq(self.MEM_WB_rdAddr)
+        ]
 
         # --- Execute ---
         # ...
