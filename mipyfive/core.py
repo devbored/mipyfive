@@ -50,7 +50,8 @@ class MipyfiveCore(Elaboratable):
             rs1Addr=self.regfile.addrBits,
             rs2Addr=self.regfile.addrBits,
             rdAddr=self.regfile.addrBits,
-            imm=self.dataWidth
+            imm=self.dataWidth,
+            pc=self.dataWidth
         )
         self.ID_EX_aluOp          = self.ID_EX.doutSlice("aluOp")
         self.ID_EX_lsuLoadCtrl    = self.ID_EX.doutSlice("lsuLoadCtrl")
@@ -67,6 +68,7 @@ class MipyfiveCore(Elaboratable):
         self.ID_EX_rs2Addr        = self.ID_EX.doutSlice("rs2Addr")
         self.ID_EX_rdAddr         = self.ID_EX.doutSlice("rdAddr")
         self.ID_EX_imm            = self.ID_EX.doutSlice("imm")
+        self.ID_EX_pc             = self.ID_EX.doutSlice("pc")
 
         self.EX_MEM = PipeReg(
             lsuLoadCtrl=len(LSULoadCtrl),
@@ -102,8 +104,14 @@ class MipyfiveCore(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        PC = Signal(32, reset=0)
+
+        PC          = Signal(32, reset=0)
         mem2RegWire = Signal(self.dataWidth)
+        aluAin      = Signal(self.dataWidth)
+        fwdAluAin   = Signal(self.dataWidth)
+        aluBin      = Signal(self.dataWidth)
+        fwdAluBin   = Signal(self.dataWidth)
+        MEM_WB_data = Signal(self.dataWidth)
 
         # Instantiate Submodules
         m.submodules.alu        = self.alu
@@ -204,7 +212,53 @@ class MipyfiveCore(Elaboratable):
         ]
 
         # --- Execute ---
-        # ...
+        m.d.comb += [
+            # Pipereg
+            self.EX_MEM.rst.eq(0),
+            self.EX_MEM.en.eq(1),
+            self.EX_MEM.din.eq(
+                Cat(
+                    self.control.lsuLoadCtrl,
+                    self.control.lsuStoreCtrl,
+                    self.control.regWrite,
+                    self.control.mem2Reg,
+                    self.control.memWrite,
+                    self.alu.out,
+                    aluBin,
+                    self.ID_EX_rdAddr,
+                )
+            ),
+            # ALU
+            self.alu.in1.eq(aluAin),
+            self.alu.in2.eq(aluBin),
+            self.alu.aluOp.eq(self.ID_EX_aluOp),
+        ]
+        # Fwd ALU A
+        with m.Switch(self.forward.fwdAluA):
+            with m.Case(AluForwardCtrl.NO_FWD):
+                m.d.comb += fwdAluAin.eq(self.ID_EX_rs1)
+            with m.Case(AluForwardCtrl.MEM_WB):
+                m.d.comb += fwdAluAin.eq(MEM_WB_data)
+            with m.Case(AluForwardCtrl.EX_MEM):
+                m.d.comb += fwdAluAin.eq(self.EX_MEM_aluOut)
+        # Fwd ALU B
+        with m.Switch(self.forward.fwdAluB):
+            with m.Case(AluForwardCtrl.NO_FWD):
+                m.d.comb += fwdAluBin.eq(self.ID_EX_rs1)
+            with m.Case(AluForwardCtrl.MEM_WB):
+                m.d.comb += fwdAluBin.eq(MEM_WB_data)
+            with m.Case(AluForwardCtrl.EX_MEM):
+                m.d.comb += fwdAluBin.eq(self.EX_MEM_aluOut)
+        # ALU A Src
+        with m.Switch(self.ID_EX_aluAsrc):
+            with m.Case(AluASrcCtrl.FROM_RS1):
+                m.d.comb += aluAin.eq(fwdAluAin)
+            with m.Case(AluASrcCtrl.FROM_ZERO):
+                m.d.comb += aluAin.eq(0)
+            with m.Case(AluASrcCtrl.FROM_PC):
+                m.d.comb += aluAin.eq(self.ID_EX_pc)
+        # ALU B Src
+        aluBin = Mux(self.ID_EX_aluBsrc, self.ID_EX_imm, fwdAluBin)
 
         # --- Memory ---
         # ...
