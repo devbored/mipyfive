@@ -152,13 +152,15 @@ class MipyfiveCore(Elaboratable):
             self.forward.MEM_WB_reg_write.eq(self.MEM_WB_regWrite)
         ]
 
+        # -------------
         # --- Fetch ---
+        # -------------
         m.d.comb += [
             # Pipereg
             self.IF_ID.rst.eq(takeBranch),
             self.IF_ID.en.eq(self.hazard.IF_ID_stall), # TODO: Fix the awkward stall logic
             self.IF_ID.din.eq(PC),
-            # PC
+            # PCout
             self.PCout.eq(PC)
         ]
         with m.If(takeBranch):
@@ -168,7 +170,9 @@ class MipyfiveCore(Elaboratable):
         with m.Else():
             m.d.sync += PC.eq(PC + 4)
 
+        # --------------
         # --- Decode ---
+        # --------------
         rs1Data = Mux(self.forward.fwdAluA, self.EX_MEM_aluOut, self.regfile.rs1Data)
         rs2Data = Mux(self.forward.fwdAluB, self.EX_MEM_aluOut, self.regfile.rs2Data)
 
@@ -206,26 +210,28 @@ class MipyfiveCore(Elaboratable):
             # Regfile
             self.regfile.rs1Addr.eq(self.instruction[15:20]),
             self.regfile.rs2Addr.eq(self.instruction[20:25]),
-            self.regfile.writeData.eq(mem2RegWire),
+            self.regfile.writeData.eq(self.lsu.lDataOut),
             self.regfile.writeEnable.eq(self.MEM_WB_regWrite),
             self.regfile.writeAddr.eq(self.MEM_WB_rdAddr)
         ]
 
+        # ---------------
         # --- Execute ---
+        # ---------------
         m.d.comb += [
             # Pipereg
             self.EX_MEM.rst.eq(0),
             self.EX_MEM.en.eq(1),
             self.EX_MEM.din.eq(
                 Cat(
-                    self.control.lsuLoadCtrl,
-                    self.control.lsuStoreCtrl,
-                    self.control.regWrite,
-                    self.control.mem2Reg,
-                    self.control.memWrite,
+                    self.ID_EX_lsuLoadCtrl,
+                    self.ID_EX_lsuStoreCtrl,
+                    self.ID_EX_regWrite,
+                    self.ID_EX_mem2Reg,
+                    self.ID_EX_memWrite,
                     self.alu.out,
                     aluBin,
-                    self.ID_EX_rdAddr,
+                    self.ID_EX_rdAddr
                 )
             ),
             # ALU
@@ -260,10 +266,35 @@ class MipyfiveCore(Elaboratable):
         # ALU B Src
         aluBin = Mux(self.ID_EX_aluBsrc, self.ID_EX_imm, fwdAluBin)
 
+        # --------------
         # --- Memory ---
-        # ...
+        # --------------
+        m.d.comb += [
+            # Pipereg
+            self.MEM_WB.rst.eq(0),
+            self.MEM_WB.en.eq(1),
+            self.MEM_WB.din.eq(
+                Cat(
+                    self.EX_MEM_lsuLoadCtrl,
+                    self.EX_MEM_regWrite,
+                    self.EX_MEM_mem2Reg,
+                    self.EX_MEM_aluOut,
+                    self.EX_MEM_rdAddr
+                )
+            ),
+            # LSU
+            self.lsu.lDataIn.eq(MEM_WB_data),
+            self.lsu.lCtrlIn.eq(self.MEM_WB_lsuLoadCtrl),
+            self.lsu.sDataIn.eq(self.EX_MEM_writeData),
+            self.lsu.sCtrlIn.eq(self.EX_MEM_lsuStoreCtrl),
+            # DataAddr
+            self.DataAddr.eq(self.EX_MEM_aluOut),
+            # DataOut
+            self.DataOut.eq(self.lsu.sDataOut)
+        ]
 
+        # -----------------
         # --- Writeback ---
-        # ...
+        # -----------------
 
         return m
