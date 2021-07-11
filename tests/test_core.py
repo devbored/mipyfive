@@ -12,18 +12,20 @@ from mipyfive.core import *
 
 createVcd = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
-def test_core(instruction, dataIn):
+def test_core(program, dataIn):
     def test(self):
         global createVcd
         global outputDir
         sim = Simulator(self.dut)
         def process():
-            yield self.dut.instruction.eq(instruction)
             yield self.dut.DataIn.eq(dataIn)
             
             # NOTE/TODO: No assertions for now - add later
             # (i.e. test(s) will always pass - currently just using this for VCD dumping)
-            for j in range(20):
+            for i in range(len(program)):
+                yield self.dut.instruction.eq(program[i])
+                yield Tick()
+            for i in range(len(program)):
                 yield Tick()
 
         sim.add_clock(1e-6)
@@ -42,7 +44,14 @@ class TestCore(unittest.TestCase):
     def setUp(self):
         self.dut = MipyfiveCore(dataWidth=32, regCount=32)
 
-    test_core = test_core(asm2binI("addi", "x1", "6", "x0"), 25)
+    # Test program
+    program = [
+        asm2binI("addi", "x1", "6", "x0"),
+        asm2binR("add", "x2", "x1", "x1"),
+        asm2binI("slli", "x3", "1", "x2"),
+        asm2binR("add", "x0", "x0", "x0"),
+    ]
+    test_core    = test_core(program, 25)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
