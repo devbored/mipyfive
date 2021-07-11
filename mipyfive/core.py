@@ -36,9 +36,9 @@ class MipyfiveCore(Elaboratable):
         self.IF_ID_pc = self.IF_ID.doutSlice("pc")
 
         self.ID_EX = PipeReg(
-            aluOp=len(AluOp),
-            lsuLoadCtrl=len(LSULoadCtrl),
-            lsuStoreCtrl=len(LSUStoreCtrl),
+            aluOp=ceilLog2(len(AluOp)),
+            lsuLoadCtrl=ceilLog2(len(LSULoadCtrl)),
+            lsuStoreCtrl=ceilLog2(len(LSUStoreCtrl)),
             regWrite=1,
             memWrite=1,
             memRead=1,
@@ -71,8 +71,8 @@ class MipyfiveCore(Elaboratable):
         self.ID_EX_pc             = self.ID_EX.doutSlice("pc")
 
         self.EX_MEM = PipeReg(
-            lsuLoadCtrl=len(LSULoadCtrl),
-            lsuStoreCtrl=len(LSUStoreCtrl),
+            lsuLoadCtrl=ceilLog2(len(LSULoadCtrl)),
+            lsuStoreCtrl=ceilLog2(len(LSUStoreCtrl)),
             regWrite=1,
             mem2Reg=1,
             memWrite=1,
@@ -90,7 +90,7 @@ class MipyfiveCore(Elaboratable):
         self.EX_MEM_rdAddr         = self.EX_MEM.doutSlice("rdAddr")
 
         self.MEM_WB = PipeReg(
-            lsuLoadCtrl=len(LSULoadCtrl),
+            lsuLoadCtrl=ceilLog2(len(LSULoadCtrl)),
             regWrite=1,
             mem2Reg=1,
             aluOut=self.dataWidth,
@@ -111,7 +111,6 @@ class MipyfiveCore(Elaboratable):
         fwdAluAin   = Signal(self.dataWidth)
         aluBin      = Signal(self.dataWidth)
         fwdAluBin   = Signal(self.dataWidth)
-        MEM_WB_data = Signal(self.dataWidth)
 
         # Instantiate Submodules
         m.submodules.alu        = self.alu
@@ -173,8 +172,8 @@ class MipyfiveCore(Elaboratable):
         # --------------
         # --- Decode ---
         # --------------
-        rs1Data = Mux(self.forward.fwdAluA, self.EX_MEM_aluOut, self.regfile.rs1Data)
-        rs2Data = Mux(self.forward.fwdAluB, self.EX_MEM_aluOut, self.regfile.rs2Data)
+        rs1Data = Mux(self.forward.fwdRegfileAout, self.EX_MEM_aluOut, self.regfile.rs1Data)
+        rs2Data = Mux(self.forward.fwdRegfileBout, self.EX_MEM_aluOut, self.regfile.rs2Data)
 
         m.d.comb += [
             # Pipereg
@@ -193,10 +192,11 @@ class MipyfiveCore(Elaboratable):
                     self.control.aluBsrc,
                     rs1Data,
                     rs2Data,
-                    self.immgen.imm,
                     self.instruction[15:20], # rs1
                     self.instruction[20:25], # rs2
-                    self.instruction[7:12]   # rd
+                    self.instruction[7:12],  # rd
+                    self.immgen.imm,
+                    self.IF_ID_pc
                 )
             ),
             # Immgen
@@ -244,7 +244,7 @@ class MipyfiveCore(Elaboratable):
             with m.Case(AluForwardCtrl.NO_FWD):
                 m.d.comb += fwdAluAin.eq(self.ID_EX_rs1)
             with m.Case(AluForwardCtrl.MEM_WB):
-                m.d.comb += fwdAluAin.eq(MEM_WB_data)
+                m.d.comb += fwdAluAin.eq(self.MEM_WB_aluOut)
             with m.Case(AluForwardCtrl.EX_MEM):
                 m.d.comb += fwdAluAin.eq(self.EX_MEM_aluOut)
         # Fwd ALU B
@@ -252,7 +252,7 @@ class MipyfiveCore(Elaboratable):
             with m.Case(AluForwardCtrl.NO_FWD):
                 m.d.comb += fwdAluBin.eq(self.ID_EX_rs1)
             with m.Case(AluForwardCtrl.MEM_WB):
-                m.d.comb += fwdAluBin.eq(MEM_WB_data)
+                m.d.comb += fwdAluBin.eq(self.MEM_WB_aluOut)
             with m.Case(AluForwardCtrl.EX_MEM):
                 m.d.comb += fwdAluBin.eq(self.EX_MEM_aluOut)
         # ALU A Src
@@ -264,7 +264,7 @@ class MipyfiveCore(Elaboratable):
             with m.Case(AluASrcCtrl.FROM_PC):
                 m.d.comb += aluAin.eq(self.ID_EX_pc)
         # ALU B Src
-        aluBin = Mux(self.ID_EX_aluBsrc, self.ID_EX_imm, fwdAluBin)
+        m.d.comb += aluBin.eq(Mux(self.ID_EX_aluBsrc, self.ID_EX_imm, fwdAluBin))
 
         # --------------
         # --- Memory ---
@@ -283,7 +283,7 @@ class MipyfiveCore(Elaboratable):
                 )
             ),
             # LSU
-            self.lsu.lDataIn.eq(MEM_WB_data),
+            self.lsu.lDataIn.eq(self.MEM_WB_aluOut),
             self.lsu.lCtrlIn.eq(self.MEM_WB_lsuLoadCtrl),
             self.lsu.sDataIn.eq(self.EX_MEM_writeData),
             self.lsu.sCtrlIn.eq(self.EX_MEM_lsuStoreCtrl),
@@ -296,5 +296,9 @@ class MipyfiveCore(Elaboratable):
         # -----------------
         # --- Writeback ---
         # -----------------
+        m.d.comb += [
+            # Mem2Reg
+            mem2RegWire.eq(Mux(self.MEM_WB_mem2Reg, self.MEM_WB_aluOut, self.DataIn))
+        ]
 
         return m

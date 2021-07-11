@@ -42,7 +42,7 @@ class TestCore(unittest.TestCase):
     def setUp(self):
         self.dut = MipyfiveCore(dataWidth=32, regCount=32)
 
-    test_core = test_core(asm2binR("add", "x1", "x0", "x6"), 25)
+    test_core = test_core(asm2binI("addi", "x1", "6", "x0"), 25)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
