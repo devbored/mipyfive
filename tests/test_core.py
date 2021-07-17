@@ -23,7 +23,8 @@ def test_core(program, dataIn):
             # NOTE/TODO: No assertions for now - add later
             # (i.e. test(s) will always pass - currently just using this for VCD dumping)
             for i in range(len(program)):
-                yield self.dut.instruction.eq(program[i])
+                pcVal = yield self.dut.PCout
+                yield self.dut.instruction.eq(program[(pcVal // 4) % len(program)])
                 yield Tick()
             for i in range(len(program)):
                 yield Tick()
@@ -49,8 +50,13 @@ class TestCore(unittest.TestCase):
         asm2binI("addi", "x1", "6", "x0"),
         asm2binR("add", "x2", "x1", "x1"),
         asm2binI("slli", "x3", "1", "x2"),
+        asm2binI("addi", "x3", "11", "x3"),
+        asm2binB("beq", "x3", "-2", "x3"),
         asm2binR("add", "x0", "x0", "x0"),
+        asm2binI("addi", "x3", "11", "x3"),
+        asm2binI("addi", "x3", "11", "x3")
     ]
+    print(program)
     test_core    = test_core(program, 25)
 
 if __name__ == "__main__":

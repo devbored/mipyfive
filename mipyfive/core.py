@@ -163,7 +163,7 @@ class MipyfiveCore(Elaboratable):
             self.PCout.eq(PC)
         ]
         with m.If(takeBranch):
-            m.d.sync += PC.eq(PC + (self.immgen.imm << 1))
+            m.d.sync += PC.eq(self.IF_ID_pc + (self.immgen.imm << 1))
         with m.Elif(~self.hazard.IF_stall): # TODO: Fix the awkward stall logic
             m.d.sync += PC.eq(PC)
         with m.Else():
@@ -283,7 +283,7 @@ class MipyfiveCore(Elaboratable):
                 )
             ),
             # LSU
-            self.lsu.lDataIn.eq(self.MEM_WB_aluOut),
+            self.lsu.lDataIn.eq(mem2RegWire),
             self.lsu.lCtrlIn.eq(self.MEM_WB_lsuLoadCtrl),
             self.lsu.sDataIn.eq(self.EX_MEM_writeData),
             self.lsu.sCtrlIn.eq(self.EX_MEM_lsuStoreCtrl),
