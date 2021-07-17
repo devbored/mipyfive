@@ -24,7 +24,7 @@ class MipyfiveCore(Elaboratable):
         # --- Core Submodules ---
         self.alu        = ALU(dataWidth)
         self.lsu        = LSU(dataWidth)
-        self.immgen     = ImmGen() # TODO: Allow for arbitrary width
+        self.immgen     = ImmGen() # TODO: Allow for arbitrary width?
         self.hazard     = HazardUnit(regCount)
         self.compare    = CompareUnit(dataWidth)
         self.forward    = ForwardingUnit(regCount)
@@ -157,14 +157,14 @@ class MipyfiveCore(Elaboratable):
         m.d.comb += [
             # Pipereg
             self.IF_ID.rst.eq(takeBranch),
-            self.IF_ID.en.eq(self.hazard.IF_ID_stall), # TODO: Fix the awkward stall logic
+            self.IF_ID.en.eq(~self.hazard.IF_ID_stall),
             self.IF_ID.din.eq(PC),
             # PCout
             self.PCout.eq(PC)
         ]
         with m.If(takeBranch):
             m.d.sync += PC.eq(self.IF_ID_pc + (self.immgen.imm << 1))
-        with m.Elif(~self.hazard.IF_stall): # TODO: Fix the awkward stall logic
+        with m.Elif(self.hazard.IF_stall):
             m.d.sync += PC.eq(PC)
         with m.Else():
             m.d.sync += PC.eq(PC + 4)
@@ -174,6 +174,10 @@ class MipyfiveCore(Elaboratable):
         # --------------
         rs1Data = Mux(self.forward.fwdRegfileAout, self.EX_MEM_aluOut, self.regfile.rs1Data)
         rs2Data = Mux(self.forward.fwdRegfileBout, self.EX_MEM_aluOut, self.regfile.rs2Data)
+
+        rs1Addr = self.instruction[15:20]
+        rs2Addr = self.instruction[20:25]
+        rdAddr  = self.instruction[7:12]
 
         m.d.comb += [
             # Pipereg
@@ -192,9 +196,9 @@ class MipyfiveCore(Elaboratable):
                     self.control.aluBsrc,
                     rs1Data,
                     rs2Data,
-                    self.instruction[15:20], # rs1
-                    self.instruction[20:25], # rs2
-                    self.instruction[7:12],  # rd
+                    rs1Addr,
+                    rs2Addr,
+                    rdAddr,
                     self.immgen.imm,
                     self.IF_ID_pc
                 )

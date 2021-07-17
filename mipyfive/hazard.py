@@ -28,17 +28,16 @@ class HazardUnit(Elaboratable):
         loadStall = (self.ID_EX_memRead &
             ((self.ID_EX_rd == self.IF_ID_rs1) | (self.ID_EX_rd == self.IF_ID_rs2)))
 
-        # Stall logic is inverted since this is the writeEnable control line for their respective pipeline regs.
         with m.If(branchStall | loadStall):
                 m.d.comb += [
-                    self.IF_stall.eq(~1),
-                    self.IF_ID_stall.eq(~1),
+                    self.IF_stall.eq(1),
+                    self.IF_ID_stall.eq(1),
                     self.ID_EX_flush.eq(1)
                 ]
         with m.Else():
             m.d.comb += [
-                self.IF_stall.eq(~0),
-                self.IF_ID_stall.eq(~0),
+                self.IF_stall.eq(0),
+                self.IF_ID_stall.eq(0),
                 self.ID_EX_flush.eq(0)
             ]
 

@@ -17,8 +17,6 @@ Another RISC-V core - implemented via [nMigen](https://github.com/m-labs/nmigen)
 
 :x: Design basic SoC-creation utility
 
-:x: Address all the TODO's in the source code
-
 :x: Finish initial documentation
 
 ## Supplemental Checklist Items

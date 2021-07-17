@@ -10,7 +10,6 @@ class ImmGen(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        # NOTE: Python slice notation for [a:b] == [a:(b-1)]
         opcode =    self.instruction[0:7]
         immI   =    Cat(self.instruction[20:31], Repl(self.instruction[31], 21))
         immS   =    Cat(self.instruction[7:12], self.instruction[25:31], Repl(self.instruction[31], 21))
