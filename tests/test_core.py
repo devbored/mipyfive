@@ -7,6 +7,7 @@ from nmigen import *
 from nmigen.back.pysim import *
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from tests.utils import *
 from mipyfive.utils import *
 from mipyfive.core import *
 
@@ -56,7 +57,6 @@ class TestCore(unittest.TestCase):
         asm2binI("addi", "x3", "11", "x3"),
         asm2binI("addi", "x3", "11", "x3")
     ]
-    print(program)
     test_core    = test_core(program, 25)
 
 if __name__ == "__main__":
