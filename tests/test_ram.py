@@ -7,7 +7,7 @@ from nmigen import *
 from nmigen.back.pysim import *
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from mipyfive.memory.ram import *
+from examples.common.ram import *
 
 createVcd = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))

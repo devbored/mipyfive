@@ -1,5 +1,5 @@
 from nmigen import *
-from ..utils import *
+from mipyfive.utils import *
 
 # A generic single-port synchronous RAM
 class RAM(Elaboratable):

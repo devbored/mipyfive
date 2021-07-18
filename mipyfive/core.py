@@ -12,6 +12,7 @@ from .regfile import *
 from .controller import *
 
 class MipyfiveCore(Elaboratable):
+    # TODO: Starting boot addr, extensions, etc. can be configured here
     def __init__(self, dataWidth, regCount):
         self.dataWidth      = dataWidth
         self.instruction    = Signal(32)

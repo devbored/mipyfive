@@ -20,9 +20,13 @@ from mipyfive.controller import *
 from mipyfive.core import *
 
 if __name__ == "__main__":
-    # Define args
+    # Define args/opts
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument("-il", action="store_true", help="Emit design in RTLIL (Yosys) instead of Verilog.")
+    parser.add_argument(
+        "-c", "--config", dest="config",
+        help="JSON file containing SoC design that mipysoc uses to generate SoC."
+    )
     args, unknown = parser.parse_known_args()
     
     if len(unknown) is not 0:
