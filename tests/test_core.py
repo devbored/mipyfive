@@ -1,8 +1,8 @@
 import os
 import sys
-import random
 import argparse
 import unittest
+import textwrap
 from nmigen import *
 from nmigen.back.pysim import *
 
@@ -10,6 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from tests.utils import *
 from mipyfive.utils import *
 from mipyfive.core import *
+from mipyfive.types import *
 
 createVcd = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
@@ -20,7 +21,7 @@ def test_core(program, dataIn):
         sim = Simulator(self.dut)
         def process():
             yield self.dut.DataIn.eq(dataIn)
-            
+
             # NOTE/TODO: No assertions for now - add later
             # (i.e. test(s) will always pass - currently just using this for VCD dumping)
             for i in range(len(program)):
@@ -44,20 +45,22 @@ def test_core(program, dataIn):
 # Define unit tests
 class TestCore(unittest.TestCase):
     def setUp(self):
-        self.dut = MipyfiveCore(dataWidth=32, regCount=32)
+        self.dut = MipyfiveCore(dataWidth=32, regCount=32, pcStart=0, ISA=CoreISAconfigs.RV32I.value)
 
     # Test program
-    program = [
-        asm2binI("addi", "x1", "6", "x0"),
-        asm2binR("add", "x2", "x1", "x1"),
-        asm2binI("slli", "x3", "1", "x2"),
-        asm2binI("addi", "x3", "11", "x3"),
-        asm2binB("beq", "x3", "-2", "x3"),
-        asm2binR("add", "x0", "x0", "x0"),
-        asm2binI("addi", "x3", "11", "x3"),
-        asm2binI("addi", "x3", "11", "x3")
-    ]
-    test_core    = test_core(program, 25)
+    program = '''
+        addi  x1, x0, 6
+        add   x2, x1, x1
+        slli  x3, x2, 1
+        addi  x3, x3, 1
+        beq   x3, -2, x3
+        add   x0, x0, x0
+        addi  x3, x3, 11
+        addi  x3, x3, 11
+    '''
+    binary = asm2Bin(program)
+
+    test_core    = test_core(binary, 25)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -67,5 +70,5 @@ if __name__ == "__main__":
     if args.vcd is True:
         print(f"[INFO]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
-    
+
     unittest.main(verbosity=2)

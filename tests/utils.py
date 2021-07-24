@@ -1,3 +1,5 @@
+import os
+import textwrap
 from riscv_assembler.utils import *
 
 def asm2binR(instr, rd, rs1, rs2):
@@ -6,7 +8,7 @@ def asm2binR(instr, rd, rs1, rs2):
     bitstring = tk.R_type(instr, rs1, rs2, rd)
     return int(bitstring, 2)
 
-def asm2binI(instr, rd, imm, rs1):
+def asm2binI(instr, rd, rs1, imm):
     ''' Simple wrapper around riscv_assembler.utils I-type assembler to convert bitstring --> raw int'''
     tk = Toolkit()
     bitstring = tk.I_type(instr, rs1, imm, rd)
@@ -35,3 +37,31 @@ def asm2binJ(instr, rd, imm):
     tk = Toolkit()
     bitstring = tk.UJ_type(instr, imm, rd)
     return int(bitstring, 2)
+
+def asm2Bin(instructions):
+    ''' Convert multi-line RV32I asm program string to binary list\n(Format: <mnemonic> <op>, <op>, ...)'''
+    instructionsList = textwrap.dedent(instructions).split(os.linesep)
+    instructionsList = [value for value in instructionsList if value != '']
+
+    tk = Toolkit()
+    binaryList = []
+    for instr in instructionsList:
+        mnemonic = instr[:instr.find(' ')]
+        operands = instr[instr.find(' '):].replace(' ', '').split(',')
+        if mnemonic in tk.R_instr:
+            binaryList.append(asm2binR(mnemonic, operands[0], operands[1], operands[2]))
+        elif mnemonic in tk.I_instr:
+            binaryList.append(asm2binI(mnemonic, operands[0], operands[1], operands[2]))
+        elif mnemonic in tk.S_instr:
+            binaryList.append(asm2binS(mnemonic, operands[0], operands[1], operands[2]))
+        elif mnemonic in tk.SB_instr:
+            binaryList.append(asm2binB(mnemonic, operands[0], operands[1], operands[2]))
+        elif mnemonic in tk.U_instr:
+            binaryList.append(asm2binU(mnemonic, operands[0], operands[1], operands[2]))
+        elif mnemonic in tk.UJ_instr:
+            binaryList.append(asm2binJ(mnemonic, operands[0], operands[1], operands[2]))
+        else:
+            print(f"[mipyfive - Error]: assembleRv32iProgram - Unrecognized mnemonic ({mnemonic})")
+            return None
+
+    return binaryList
