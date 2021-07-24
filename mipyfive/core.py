@@ -23,6 +23,7 @@ class MipyfiveCore(Elaboratable):
         self.PCout          = Signal(32)
         self.DataAddr       = Signal(32)
         self.DataOut        = Signal(dataWidth)
+        self.DataWE         = Signal()
 
         # --- Core Submodules ---
         self.alu        = ALU(dataWidth)
@@ -297,7 +298,9 @@ class MipyfiveCore(Elaboratable):
             # DataAddr
             self.DataAddr.eq(self.EX_MEM_aluOut),
             # DataOut
-            self.DataOut.eq(self.lsu.sDataOut)
+            self.DataOut.eq(self.lsu.sDataOut),
+            # DataWE
+            self.DataWE.eq(self.EX_MEM_memWrite)
         ]
 
         # -----------------

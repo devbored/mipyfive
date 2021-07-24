@@ -39,7 +39,9 @@ def asm2binJ(instr, rd, imm):
     return int(bitstring, 2)
 
 def asm2Bin(instructions):
-    ''' Convert multi-line RV32I asm program string to binary list\n(Format: <mnemonic> <op>, <op>, ...)'''
+    '''Convert RV32I asm program str to binary list\n
+    (Operand order follows same arg orders as asm2bin<RISBUJ> util functions)
+    '''
     instructionsList = textwrap.dedent(instructions).split(os.linesep)
     instructionsList = [value for value in instructionsList if value != '']
 
