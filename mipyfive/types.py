@@ -138,3 +138,10 @@ class CompareTypes(Enum):
     LESS_THAN_U     = 0b011
     GREATER_EQUAL   = 0b100
     GREATER_EQUAL_U = 0b101
+
+# Supported ISAs
+class CoreISAconfigs(Enum):
+    RV32I   = 0
+    RV32IM  = 1
+    RV32IF  = 2
+    RV32IMF = 3

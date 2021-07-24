@@ -13,11 +13,13 @@ from .controller import *
 
 class MipyfiveCore(Elaboratable):
     # TODO: Starting boot addr, extensions, etc. can be configured here
-    def __init__(self, dataWidth, regCount):
+    def __init__(self, dataWidth, regCount, pcStart, ISA):
         self.dataWidth      = dataWidth
+        self.pcStart        = pcStart
+        self.ISA            = ISA # TODO: Use later when extensions are added/supported
         self.instruction    = Signal(32)
         self.DataIn         = Signal(dataWidth)
-        
+
         self.PCout          = Signal(32)
         self.DataAddr       = Signal(32)
         self.DataOut        = Signal(dataWidth)
@@ -106,7 +108,7 @@ class MipyfiveCore(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        PC          = Signal(32, reset=0)
+        PC          = Signal(32, reset=self.pcStart)
         mem2RegWire = Signal(self.dataWidth)
         aluAin      = Signal(self.dataWidth)
         fwdAluAin   = Signal(self.dataWidth)
