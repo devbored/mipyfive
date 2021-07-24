@@ -27,7 +27,7 @@ class Controller(Elaboratable):
 
         # Get instruction type via opcode
         with m.Switch(opcode):
-            # --- R-Type --- 
+            # --- R-Type ---
             with m.Case(Rv32iTypes.R.value):
                 m.d.comb += [
                     self.regWrite.eq(1),
@@ -61,7 +61,7 @@ class Controller(Elaboratable):
                     with m.Default():
                         pass # TODO: Handle invalid instruction here later...
 
-            # --- I-Type --- 
+            # --- I-Type ---
             with m.Case(Rv32iTypes.I_Arith.value, Rv32iTypes.I_Jump.value, Rv32iTypes.I_Load.value):
                 m.d.comb += [
                     self.branch.eq(0),
@@ -172,7 +172,7 @@ class Controller(Elaboratable):
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
                 ]
 
-            # --- S-Type --- 
+            # --- S-Type ---
             with m.Case(Rv32iTypes.S):
                 m.d.comb += [
                     self.branch.eq(0),
@@ -194,7 +194,7 @@ class Controller(Elaboratable):
                     with m.Default():
                         m.d.comb += self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SW.value)
 
-            # --- B-Type --- 
+            # --- B-Type ---
             with m.Case(Rv32iTypes.B):
                 m.d.comb += [
                     self.branch.eq(1),
@@ -261,7 +261,7 @@ class Controller(Elaboratable):
                     self.aluAsrc.eq(AluASrcCtrl.FROM_ZERO.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
                 ]
-        
+
             # -- Unknown instruction --
             with m.Default():
                 pass # TODO: Handle invalid instruction here later...

@@ -238,7 +238,7 @@ class MipyfiveCore(Elaboratable):
                     self.ID_EX_mem2Reg,
                     self.ID_EX_memWrite,
                     self.alu.out,
-                    aluBin,
+                    fwdAluBin,
                     self.ID_EX_rdAddr
                 )
             ),
@@ -258,7 +258,7 @@ class MipyfiveCore(Elaboratable):
         # Fwd ALU B
         with m.Switch(self.forward.fwdAluB):
             with m.Case(AluForwardCtrl.NO_FWD):
-                m.d.comb += fwdAluBin.eq(self.ID_EX_rs1)
+                m.d.comb += fwdAluBin.eq(self.ID_EX_rs2)
             with m.Case(AluForwardCtrl.MEM_WB):
                 m.d.comb += fwdAluBin.eq(self.MEM_WB_aluOut)
             with m.Case(AluForwardCtrl.EX_MEM):
