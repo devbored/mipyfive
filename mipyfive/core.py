@@ -211,7 +211,7 @@ class MipyfiveCore(Elaboratable):
             self.immgen.instruction.eq(self.instruction),
             # Compare
             self.compare.in1.eq(rs1Data),
-            self.compare.in2.eq(rs2Data),
+            self.compare.in2.eq(Mux(self.control.aluBsrc, self.immgen.imm, rs2Data)),
             self.compare.cmpType.eq(self.control.cmpType),
             # Control
             self.control.instruction.eq(self.instruction),

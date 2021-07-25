@@ -25,7 +25,7 @@ def test_core(program):
             for i in range(len(program)):
                 yield self.dut.submodules.imem.memory[i].eq(program[i])
 
-            for i in range(len(program)*2):
+            for i in range(len(program) + 5):
                 yield Tick()
 
         sim.add_clock(1e-6)
@@ -63,22 +63,14 @@ class TestCore(unittest.TestCase):
             self.dut.submodules.core.DataIn.eq(self.dut.submodules.dmem.readData)
         ]
 
+    # Test each instruction
     program = '''
-        addi  x1, x0, 6
-        sw    x1, 0,  x0
-        add   x2, x1, x1
-        slli  x3, x2, 1
-        addi  x3, x3, 1
-        add   x0, x0, x0
-        addi  x3, x3, 11
-        addi  x3, x3, 11
-        beq   x3, -2, x3
-        addi  x3, x3, 11
-        addi  x3, x3, 11
+        addi   x1, x0, 4
+        slti   x2, x1, -6
+        sltiu  x3, x1, 6
+        xori   x4, x1, 15
     '''
     programBinary = asm2Bin(program)
-    print(programBinary)
-
     test_core = test_core(programBinary)
 
 if __name__ == "__main__":

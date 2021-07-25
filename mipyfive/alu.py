@@ -4,11 +4,11 @@ from .utils import *
 
 class ALU(Elaboratable):
     def __init__(self, width):
-        self.aluOp = Signal(ceilLog2(len(AluOp)))
-        self.in1 = Signal(width)
-        self.in2 = Signal(width)
-        self.out = Signal(width)
-        self.zflag = Signal()
+        self.aluOp  = Signal(ceilLog2(len(AluOp)))
+        self.in1    = Signal(width)
+        self.in2    = Signal(width)
+
+        self.out    = Signal(width)
 
     def elaborate(self, platform):
         m = Module()
@@ -29,12 +29,12 @@ class ALU(Elaboratable):
             m.d.comb += self.out.eq(self.in1 >> self.in2)
         with m.Elif(self.aluOp == AluOp.SRA):
             m.d.comb += self.out.eq(self.in1.as_signed() >> self.in2)
+        with m.Elif(self.aluOp == AluOp.SLT):
+            m.d.comb += self.out.eq(self.in1.as_signed() < self.in2.as_signed())
+        with m.Elif(self.aluOp == AluOp.SLTU):
+            m.d.comb += self.out.eq(self.in1 < self.in2)
         # Default: Unknown AluOp should just resort to ADD
         with m.Else():
             m.d.comb += self.out.eq(self.in1 + self.in2)
-
-        # ALU flag(s)
-        with m.If(self.out == 0):
-            m.d.comb += self.zflag.eq(1)
 
         return m

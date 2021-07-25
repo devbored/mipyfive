@@ -58,6 +58,10 @@ class Controller(Elaboratable):
                         m.d.comb += self.aluOp.eq(AluOp.OR.value)
                     with m.Case(Rv32iInstructions.AND.value):
                         m.d.comb += self.aluOp.eq(AluOp.AND.value)
+                    with m.Case(Rv32iInstructions.SLT.value):
+                        m.d.comb += self.aluOp.eq(AluOp.SLT.value)
+                    with m.Case(Rv32iInstructions.SLTU.value):
+                        m.d.comb += self.aluOp.eq(AluOp.SLTU.value)
                     with m.Default():
                         pass # TODO: Handle invalid instruction here later...
 
@@ -103,13 +107,13 @@ class Controller(Elaboratable):
                             ]
                         with m.Case(Rv32iInstructions.SLTI.value):
                             m.d.comb += [
-                                self.aluOp.eq(AluOp.ADD.value),
+                                self.aluOp.eq(AluOp.SLT.value),
                                 self.cmpType.eq(CompareTypes.LESS_THAN.value),
                                 self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
                             ]
                         with m.Case(Rv32iInstructions.SLTIU.value):
                             m.d.comb += [
-                                self.aluOp.eq(AluOp.ADD.value),
+                                self.aluOp.eq(AluOp.SLTU.value),
                                 self.cmpType.eq(CompareTypes.LESS_THAN_U.value),
                                 self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
                             ]
