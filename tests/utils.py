@@ -30,7 +30,9 @@ def asm2binU(instr, rd, imm):
     ''' Simple wrapper around riscv_assembler.utils U-type assembler to convert bitstring --> raw int'''
     tk = Toolkit()
     bitstring = tk.U_type(instr, imm, rd)
-    return int(bitstring, 2)
+
+    # Possible bug with returned bitstring? Imm value seems to disappear - this is a workaround for now
+    return (int(bitstring, 2) | (int(imm) << 12))
 
 def asm2binJ(instr, rd, imm):
     ''' Simple wrapper around riscv_assembler.utils J/UJ-type assembler to convert bitstring --> raw int'''
@@ -38,7 +40,7 @@ def asm2binJ(instr, rd, imm):
     bitstring = tk.UJ_type(instr, imm, rd)
     return int(bitstring, 2)
 
-def asm2Bin(instructions):
+def asm2Bin(instructions, debugPrint=False):
     '''Convert RV32I asm program str to binary list\n
     (Operand order follows same arg orders as asm2bin<RISBUJ> util functions)
     '''
@@ -47,7 +49,7 @@ def asm2Bin(instructions):
 
     tk = Toolkit()
     binaryList = []
-    for instr in instructionsList:
+    for i, instr in enumerate(instructionsList):
         mnemonic = instr[:instr.find(' ')]
         operands = instr[instr.find(' '):].replace(' ', '').split(',')
         if mnemonic in tk.R_instr:
@@ -59,11 +61,13 @@ def asm2Bin(instructions):
         elif mnemonic in tk.SB_instr:
             binaryList.append(asm2binB(mnemonic, operands[0], operands[1], operands[2]))
         elif mnemonic in tk.U_instr:
-            binaryList.append(asm2binU(mnemonic, operands[0], operands[1], operands[2]))
+            binaryList.append(asm2binU(mnemonic, operands[0], operands[1]))
         elif mnemonic in tk.UJ_instr:
-            binaryList.append(asm2binJ(mnemonic, operands[0], operands[1], operands[2]))
+            binaryList.append(asm2binJ(mnemonic, operands[0], operands[1]))
         else:
             print(f"[mipyfive - Error]: assembleRv32iProgram - Unrecognized mnemonic ({mnemonic})")
             return None
+        if debugPrint is True:
+            print(f"Instr: {mnemonic}: {operands} --> {hex(binaryList[i])}")
 
     return binaryList

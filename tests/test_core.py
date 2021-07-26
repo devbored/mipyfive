@@ -68,9 +68,62 @@ class TestCore(unittest.TestCase):
         addi   x1, x0, 4
         slti   x2, x1, -6
         sltiu  x3, x1, 6
-        xori   x4, x1, 15
+        xori   x4, x1, 255
+        ori    x5, x1, 3
+        andi   x6, x1, 15
+        slli   x7, x1, 29
+        slri   x8, x1, 1
+        srai   x9, x7, 3
+        add    x10, x1, x3
+        sub    x11, x1, x3
+        sll    x12, x1, x11
+        slt    x13, x1, x9
+        sltu   x14, x1, x9
+        xor    x15, x1, x8
+        srl    x16, x1, x3
+        sra    x17, x1, x3
+        or     x18, x1, x3
+        and    x19, x4, x5
+        lui    x20, 5
+        auipc  x21, 4
+        sb     x4, 16, x0
+        sh     x4, 20, x0
+        sw     x4, 24, x0
+        lb     x22, x0, 24
+        lh     x23, x0, 24
+        lw     x24, x0, 24
+        lbu    x25, x0, 24
+        lhu    x26, x0, 24
+        add    x0, x0, x0
+        add    x0, x0, x0
+
+        jalr   x22, x0, 6
+        add    x0, x0, x0
+        add    x0, x0, x0
+        jalr   x23, x1, 2
+        add    x0, x0, x0
+        add    x0, x0, x0
+        beq    x1, 4, x0
+        add    x0, x0, x0
+        add    x0, x0, x0
+        bne    x1, 4, x0
+        add    x0, x0, x0
+        add    x0, x0, x0
+        blt    x1, 4, x0
+        add    x0, x0, x0
+        add    x0, x0, x0
+        bge    x1, 4, x0
+        add    x0, x0, x0
+        add    x0, x0, x0
+        bltu   x1, 4, x0
+        add    x0, x0, x0
+        add    x0, x0, x0
+        bgeu   x1, 4, x0
+        add    x0, x0, x0
+        add    x0, x0, x0
     '''
-    programBinary = asm2Bin(program)
+    programBinary = asm2Bin(program, debugPrint=True)
+    programBinary[8] |= 0x40000000  # Bug in generated srai instruction generated - this is a quick workaround
     test_core = test_core(programBinary)
 
 if __name__ == "__main__":

@@ -36,8 +36,9 @@ class MipyfiveCore(Elaboratable):
         self.control    = Controller()
 
         # Create pipeline registers
-        self.IF_ID = PipeReg(pc=self.dataWidth)
-        self.IF_ID_pc = self.IF_ID.doutSlice("pc")
+        self.IF_ID = PipeReg(pc=self.dataWidth, pc4=self.dataWidth)
+        self.IF_ID_pc  = self.IF_ID.doutSlice("pc")
+        self.IF_ID_pc4 = self.IF_ID.doutSlice("pc4")
 
         self.ID_EX = PipeReg(
             aluOp=ceilLog2(len(AluOp)),
@@ -48,14 +49,15 @@ class MipyfiveCore(Elaboratable):
             memRead=1,
             mem2Reg=1,
             aluAsrc=2,
-            aluBsrc=1,
+            aluBsrc=2,
             rs1=self.dataWidth,
             rs2=self.dataWidth,
             rs1Addr=self.regfile.addrBits,
             rs2Addr=self.regfile.addrBits,
             rdAddr=self.regfile.addrBits,
             imm=self.dataWidth,
-            pc=self.dataWidth
+            pc=self.dataWidth,
+            pc4=self.dataWidth
         )
         self.ID_EX_aluOp          = self.ID_EX.doutSlice("aluOp")
         self.ID_EX_lsuLoadCtrl    = self.ID_EX.doutSlice("lsuLoadCtrl")
@@ -73,6 +75,7 @@ class MipyfiveCore(Elaboratable):
         self.ID_EX_rdAddr         = self.ID_EX.doutSlice("rdAddr")
         self.ID_EX_imm            = self.ID_EX.doutSlice("imm")
         self.ID_EX_pc             = self.ID_EX.doutSlice("pc")
+        self.ID_EX_pc4            = self.ID_EX.doutSlice("pc4")
 
         self.EX_MEM = PipeReg(
             lsuLoadCtrl=ceilLog2(len(LSULoadCtrl)),
@@ -130,14 +133,14 @@ class MipyfiveCore(Elaboratable):
         m.submodules.EX_MEM     = self.EX_MEM
         m.submodules.MEM_WB     = self.MEM_WB
 
-        # Internal logic
+        # Static branch prediction
         takeBranch = self.control.branch & self.compare.isTrue
 
         # Hazard and Forwarding setup/logic
         m.d.comb += [
             # Hazard
             self.hazard.ID_EX_memRead.eq(self.ID_EX_memRead),
-            self.hazard.Branch.eq(self.control.branch),
+            self.hazard.Branch.eq(self.control.branch | self.control.jalr),
             self.hazard.EX_MEM_memToReg.eq(self.EX_MEM_mem2Reg),
             self.hazard.ID_EX_regWrite.eq(self.ID_EX_regWrite),
             self.hazard.ID_EX_rd.eq(self.ID_EX_rdAddr),
@@ -154,31 +157,36 @@ class MipyfiveCore(Elaboratable):
             self.forward.EX_MEM_reg_write.eq(self.EX_MEM_regWrite),
             self.forward.MEM_WB_reg_write.eq(self.MEM_WB_regWrite)
         ]
+        rs1Data = Mux(self.forward.fwdRegfileAout, self.EX_MEM_aluOut, self.regfile.rs1Data)
+        rs2Data = Mux(self.forward.fwdRegfileBout, self.EX_MEM_aluOut, self.regfile.rs2Data)
 
         # -------------
         # --- Fetch ---
         # -------------
+        pcNext = (PC + 4)
         m.d.comb += [
             # Pipereg
-            self.IF_ID.rst.eq(takeBranch),
+            self.IF_ID.rst.eq(takeBranch | self.control.jalr),
             self.IF_ID.en.eq(~self.hazard.IF_ID_stall),
-            self.IF_ID.din.eq(PC),
+            self.IF_ID.din.eq(
+                Cat(
+                    PC,
+                    pcNext
+                )
+            ),
             # PCout
             self.PCout.eq(PC)
         ]
-        with m.If(takeBranch):
-            m.d.sync += PC.eq(self.IF_ID_pc + (self.immgen.imm << 1))
+        with m.If(takeBranch | self.control.jalr):
+            m.d.sync += PC.eq(Mux(takeBranch, self.IF_ID_pc, rs1Data) + (self.immgen.imm << 1))
         with m.Elif(self.hazard.IF_stall):
             m.d.sync += PC.eq(PC)
         with m.Else():
-            m.d.sync += PC.eq(PC + 4)
+            m.d.sync += PC.eq(pcNext)
 
         # --------------
         # --- Decode ---
         # --------------
-        rs1Data = Mux(self.forward.fwdRegfileAout, self.EX_MEM_aluOut, self.regfile.rs1Data)
-        rs2Data = Mux(self.forward.fwdRegfileBout, self.EX_MEM_aluOut, self.regfile.rs2Data)
-
         rs1Addr = self.instruction[15:20]
         rs2Addr = self.instruction[20:25]
         rdAddr  = self.instruction[7:12]
@@ -204,7 +212,8 @@ class MipyfiveCore(Elaboratable):
                     rs2Addr,
                     rdAddr,
                     self.immgen.imm,
-                    self.IF_ID_pc
+                    self.IF_ID_pc,
+                    self.IF_ID_pc4
                 )
             ),
             # Immgen
@@ -271,8 +280,16 @@ class MipyfiveCore(Elaboratable):
                 m.d.comb += aluAin.eq(0)
             with m.Case(AluASrcCtrl.FROM_PC):
                 m.d.comb += aluAin.eq(self.ID_EX_pc)
+            with m.Case(AluASrcCtrl.FROM_PC4):
+                m.d.comb += aluAin.eq(self.ID_EX_pc4)
         # ALU B Src
-        m.d.comb += aluBin.eq(Mux(self.ID_EX_aluBsrc, self.ID_EX_imm, fwdAluBin))
+        with m.Switch(self.ID_EX_aluBsrc):
+            with m.Case(AluBSrcCtrl.FROM_RS2):
+                m.d.comb += aluBin.eq(fwdAluBin)
+            with m.Case(AluBSrcCtrl.FROM_IMM):
+                m.d.comb += aluBin.eq(self.ID_EX_imm)
+            with m.Case(AluBSrcCtrl.FROM_ZERO):
+                m.d.comb += aluBin.eq(0)
 
         # --------------
         # --- Memory ---

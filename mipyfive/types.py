@@ -103,10 +103,12 @@ class AluASrcCtrl(Enum):
     FROM_RS1    = 0b00
     FROM_ZERO   = 0b01
     FROM_PC     = 0b10
+    FROM_PC4    = 0b11
 
 class AluBSrcCtrl(Enum):
-    FROM_RS2    = 0
-    FROM_IMM    = 1
+    FROM_RS2    = 0b00
+    FROM_IMM    = 0b01
+    FROM_ZERO   = 0b10
 
 # ALU Input Data Hazard Forward Selection mux Ctrl types
 class AluForwardCtrl(Enum):
