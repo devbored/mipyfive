@@ -18,7 +18,8 @@ class Controller(Elaboratable):
         self.aluAsrc        = Signal(2)
         self.aluBsrc        = Signal(2)
         self.branch         = Signal()
-        self.jalr           = Signal()
+        self.jump           = Signal()
+        self.jumpR          = Signal()
 
     def elaborate(self, platform):
         m = Module()
@@ -41,7 +42,8 @@ class Controller(Elaboratable):
                     self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SW.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_RS2.value),
                     self.branch.eq(0),
-                    self.jalr.eq(0)
+                    self.jump.eq(0),
+                    self.jumpR.eq(0)
                 ]
                 with m.Switch(Cat(opcode, funct3, funct7)):
                     with m.Case(Rv32iInstructions.ADD.value):
@@ -71,7 +73,8 @@ class Controller(Elaboratable):
             with m.Case(Rv32iTypes.I_Arith.value, Rv32iTypes.I_Jump.value, Rv32iTypes.I_Load.value):
                 m.d.comb += [
                     self.branch.eq(0),
-                    self.jalr.eq(0),
+                    self.jump.eq(0),
+                    self.jumpR.eq(0),
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
@@ -104,7 +107,9 @@ class Controller(Elaboratable):
                     with m.Switch(Cat(opcode, funct3, Repl(C(0), len(funct7)))):
                         with m.Case(Rv32iInstructions.JALR.value):
                             m.d.comb += [
-                                self.jalr.eq(1),
+                                self.jumpR.eq(1),
+                                self.aluAsrc.eq(AluASrcCtrl.FROM_PC.value),
+                                self.aluBsrc.eq(AluBSrcCtrl.FROM_ZERO.value),
                                 self.aluOp.eq(AluOp.ADD.value),
                                 self.cmpType.eq(CompareTypes.EQUAL.value),
                                 self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
@@ -174,7 +179,8 @@ class Controller(Elaboratable):
                 # TODO: Essentially a nop for now - revisit later...
                 m.d.comb += [
                     self.branch.eq(0),
-                    self.jalr.eq(0),
+                    self.jump.eq(0),
+                    self.jumpR.eq(0),
                     self.regWrite.eq(0),
                     self.memWrite.eq(0),
                     self.memRead.eq(0),
@@ -191,7 +197,8 @@ class Controller(Elaboratable):
             with m.Case(Rv32iTypes.S):
                 m.d.comb += [
                     self.branch.eq(0),
-                    self.jalr.eq(0),
+                    self.jump.eq(0),
+                    self.jumpR.eq(0),
                     self.regWrite.eq(0),
                     self.memWrite.eq(1),
                     self.memRead.eq(0),
@@ -214,7 +221,8 @@ class Controller(Elaboratable):
             with m.Case(Rv32iTypes.B):
                 m.d.comb += [
                     self.branch.eq(1),
-                    self.jalr.eq(0),
+                    self.jump.eq(0),
+                    self.jumpR.eq(0),
                     self.regWrite.eq(0),
                     self.memWrite.eq(0),
                     self.memRead.eq(0),
@@ -245,7 +253,8 @@ class Controller(Elaboratable):
             with m.Case(Rv32iTypes.U_Add.value, Rv32iTypes.U_Load.value):
                 m.d.comb += [
                     self.branch.eq(0),
-                    self.jalr.eq(0),
+                    self.jump.eq(0),
+                    self.jumpR.eq(0),
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
                     self.memRead.eq(0),
@@ -268,7 +277,8 @@ class Controller(Elaboratable):
             with m.Case(Rv32iTypes.J):
                 m.d.comb += [
                     self.branch.eq(0),
-                    self.jalr.eq(0),
+                    self.jump.eq(1),
+                    self.jumpR.eq(0),
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
                     self.memRead.eq(0),

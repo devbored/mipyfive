@@ -140,7 +140,7 @@ class MipyfiveCore(Elaboratable):
         m.d.comb += [
             # Hazard
             self.hazard.ID_EX_memRead.eq(self.ID_EX_memRead),
-            self.hazard.Branch.eq(self.control.branch | self.control.jalr),
+            self.hazard.Branch.eq(self.control.branch),
             self.hazard.EX_MEM_memToReg.eq(self.EX_MEM_mem2Reg),
             self.hazard.ID_EX_regWrite.eq(self.ID_EX_regWrite),
             self.hazard.ID_EX_rd.eq(self.ID_EX_rdAddr),
@@ -160,13 +160,13 @@ class MipyfiveCore(Elaboratable):
         rs1Data = Mux(self.forward.fwdRegfileAout, self.EX_MEM_aluOut, self.regfile.rs1Data)
         rs2Data = Mux(self.forward.fwdRegfileBout, self.EX_MEM_aluOut, self.regfile.rs2Data)
 
-        # -------------
-        # --- Fetch ---
-        # -------------
-        pcNext = (PC + 4)
+        # --- Fetch ---------------------------------------------------------------------------------------------------
+
+        pcNext = Signal(32)
+        m.d.sync += PC.eq(pcNext)
         m.d.comb += [
             # Pipereg
-            self.IF_ID.rst.eq(takeBranch | self.control.jalr),
+            self.IF_ID.rst.eq(takeBranch),
             self.IF_ID.en.eq(~self.hazard.IF_ID_stall),
             self.IF_ID.din.eq(
                 Cat(
@@ -175,18 +175,21 @@ class MipyfiveCore(Elaboratable):
                 )
             ),
             # PCout
-            self.PCout.eq(PC)
+            self.PCout.eq(Mux((self.control.jump | self.control.jumpR), pcNext, PC))
         ]
-        with m.If(takeBranch | self.control.jalr):
-            m.d.sync += PC.eq(Mux(takeBranch, self.IF_ID_pc, rs1Data) + (self.immgen.imm << 1))
+        with m.If(takeBranch):
+            m.d.comb += pcNext.eq(self.IF_ID_pc + (self.immgen.imm << 1))
+        with m.Elif(self.control.jumpR):
+            m.d.comb += pcNext.eq(rs1Data + (self.immgen.imm << 1))
+        with m.Elif(self.control.jump):
+            m.d.comb += pcNext.eq(self.immgen.imm << 1)
         with m.Elif(self.hazard.IF_stall):
-            m.d.sync += PC.eq(PC)
+            m.d.comb += pcNext.eq(PC)
         with m.Else():
-            m.d.sync += PC.eq(pcNext)
+            m.d.comb += pcNext.eq(PC + 4)
 
-        # --------------
-        # --- Decode ---
-        # --------------
+        # --- Decode --------------------------------------------------------------------------------------------------
+
         rs1Addr = self.instruction[15:20]
         rs2Addr = self.instruction[20:25]
         rdAddr  = self.instruction[7:12]
@@ -232,9 +235,8 @@ class MipyfiveCore(Elaboratable):
             self.regfile.writeAddr.eq(self.MEM_WB_rdAddr)
         ]
 
-        # ---------------
-        # --- Execute ---
-        # ---------------
+        # --- Execute -------------------------------------------------------------------------------------------------
+
         m.d.comb += [
             # Pipereg
             self.EX_MEM.rst.eq(0),
@@ -291,9 +293,8 @@ class MipyfiveCore(Elaboratable):
             with m.Case(AluBSrcCtrl.FROM_ZERO):
                 m.d.comb += aluBin.eq(0)
 
-        # --------------
-        # --- Memory ---
-        # --------------
+        # --- Memory --------------------------------------------------------------------------------------------------
+
         m.d.comb += [
             # Pipereg
             self.MEM_WB.rst.eq(0),
@@ -320,9 +321,8 @@ class MipyfiveCore(Elaboratable):
             self.DataWE.eq(self.EX_MEM_memWrite)
         ]
 
-        # -----------------
-        # --- Writeback ---
-        # -----------------
+        # --- Writeback -----------------------------------------------------------------------------------------------
+
         m.d.comb += [
             # Mem2Reg
             mem2RegWire.eq(Mux(self.MEM_WB_mem2Reg, self.MEM_WB_aluOut, self.DataIn))

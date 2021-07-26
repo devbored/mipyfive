@@ -44,8 +44,8 @@ class TestCore(unittest.TestCase):
     def setUp(self):
         self.dut  = Module()
         self.dut.submodules.core = MipyfiveCore(dataWidth=32, regCount=32, pcStart=-4, ISA=CoreISAconfigs.RV32I.value)
-        self.dut.submodules.imem = RAM(width=32, depth=128, wordAligned=True)
-        self.dut.submodules.dmem = RAM(width=32, depth=128)
+        self.dut.submodules.imem = RAM(width=32, depth=256, wordAligned=True)
+        self.dut.submodules.dmem = RAM(width=32, depth=256)
 
         self.dut.d.comb += [
             # imem connections
@@ -96,11 +96,10 @@ class TestCore(unittest.TestCase):
         lhu    x26, x0, 24
         add    x0, x0, x0
         add    x0, x0, x0
-
-        jalr   x22, x0, 6
+        jalr   x22, x0, 68
         add    x0, x0, x0
         add    x0, x0, x0
-        jalr   x23, x1, 2
+        jal    x23, 74
         add    x0, x0, x0
         add    x0, x0, x0
         beq    x1, 4, x0

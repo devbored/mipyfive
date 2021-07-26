@@ -13,7 +13,7 @@ class PipeReg(Elaboratable):
                 self.width += input[1]
         self.din    = Signal(self.width)
         self.en     = Signal()
-        self.rst    = ResetSignal()
+        self.rst    = Signal()
         self.dout   = Signal(self.width)
         self.reg    = Memory(width=self.width, depth=1)
 
@@ -24,7 +24,7 @@ class PipeReg(Elaboratable):
         m = Module()
 
         m.d.comb += self.dout.eq(self.reg[0])
-        
+
         with m.If(self.rst):
             m.d.sync += self.reg[0].eq(0)
         with m.Elif(self.en):
