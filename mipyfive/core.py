@@ -175,7 +175,6 @@ class MipyfiveCore(Elaboratable):
                 )
             ),
             # PCout
-            #self.PCout.eq(Mux((self.control.jump | self.control.jumpR | takeBranch), pcNext, PC))
             self.PCout.eq(pcNext)
         ]
         with m.If(takeBranch | self.control.jumpR):
