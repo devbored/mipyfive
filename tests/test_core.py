@@ -43,7 +43,7 @@ def test_core(program):
 class TestCore(unittest.TestCase):
     def setUp(self):
         self.dut  = Module()
-        self.dut.submodules.core = MipyfiveCore(dataWidth=32, regCount=32, pcStart=-4, ISA=CoreISAconfigs.RV32I.value)
+        self.dut.submodules.core = MipyfiveCore(dataWidth=32, regCount=32, pcStart=-8, ISA=CoreISAconfigs.RV32I.value)
         self.dut.submodules.imem = RAM(width=32, depth=256, wordAligned=True)
         self.dut.submodules.dmem = RAM(width=32, depth=256)
 
@@ -102,7 +102,7 @@ class TestCore(unittest.TestCase):
         jal    x23, 74
         add    x0, x0, x0
         add    x0, x0, x0
-        beq    x1, 4, x0
+        beq    x1, 6, x0
         add    x0, x0, x0
         add    x0, x0, x0
         bne    x1, 4, x0

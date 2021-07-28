@@ -26,7 +26,6 @@ def test_regfile_read():
                 testList.append(randVal)
             yield Tick()
 
-            # Test that reading from 
             for i in range(self.dut.regArray.depth):
                 yield self.dut.rs1Addr.eq(i)
                 yield self.dut.rs2Addr.eq(i)
@@ -93,5 +92,5 @@ if __name__ == "__main__":
     if args.vcd is True:
         print(f"[INFO]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
-    
+
     unittest.main(verbosity=2)

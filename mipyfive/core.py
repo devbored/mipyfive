@@ -175,12 +175,11 @@ class MipyfiveCore(Elaboratable):
                 )
             ),
             # PCout
-            self.PCout.eq(Mux((self.control.jump | self.control.jumpR), pcNext, PC))
+            #self.PCout.eq(Mux((self.control.jump | self.control.jumpR | takeBranch), pcNext, PC))
+            self.PCout.eq(pcNext)
         ]
-        with m.If(takeBranch):
-            m.d.comb += pcNext.eq(self.IF_ID_pc + (self.immgen.imm << 1))
-        with m.Elif(self.control.jumpR):
-            m.d.comb += pcNext.eq(rs1Data + (self.immgen.imm << 1))
+        with m.If(takeBranch | self.control.jumpR):
+            m.d.comb += pcNext.eq(Mux(takeBranch, PC, rs1Data) + (self.immgen.imm << 1))
         with m.Elif(self.control.jump):
             m.d.comb += pcNext.eq(self.immgen.imm << 1)
         with m.Elif(self.hazard.IF_stall):
