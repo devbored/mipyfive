@@ -36,9 +36,14 @@ class MipyfiveCore(Elaboratable):
         self.control    = Controller()
 
         # Create pipeline registers
-        self.IF_ID = PipeReg(pc=self.dataWidth, pc4=self.dataWidth)
-        self.IF_ID_pc  = self.IF_ID.doutSlice("pc")
-        self.IF_ID_pc4 = self.IF_ID.doutSlice("pc4")
+        self.IF_ID = PipeReg(
+            pc=self.dataWidth,
+            pc4=self.dataWidth,
+            instr=self.dataWidth
+        )
+        self.IF_ID_pc       = self.IF_ID.doutSlice("pc")
+        self.IF_ID_pc4      = self.IF_ID.doutSlice("pc4")
+        self.IF_ID_instr    = self.IF_ID.doutSlice("instr")
 
         self.ID_EX = PipeReg(
             aluOp=ceilLog2(len(AluOp)),
@@ -101,13 +106,15 @@ class MipyfiveCore(Elaboratable):
             regWrite=1,
             mem2Reg=1,
             aluOut=self.dataWidth,
-            rdAddr=self.regfile.addrBits
+            rdAddr=self.regfile.addrBits,
+            dataIn=self.dataWidth
         )
         self.MEM_WB_lsuLoadCtrl = self.MEM_WB.doutSlice("lsuLoadCtrl")
         self.MEM_WB_regWrite    = self.MEM_WB.doutSlice("regWrite")
         self.MEM_WB_mem2Reg     = self.MEM_WB.doutSlice("mem2Reg")
         self.MEM_WB_aluOut      = self.MEM_WB.doutSlice("aluOut")
         self.MEM_WB_rdAddr      = self.MEM_WB.doutSlice("rdAddr")
+        self.MEM_WB_dataIn      = self.MEM_WB.doutSlice("dataIn")
 
     def elaborate(self, platform):
         m = Module()
@@ -145,12 +152,12 @@ class MipyfiveCore(Elaboratable):
             self.hazard.ID_EX_regWrite.eq(self.ID_EX_regWrite),
             self.hazard.ID_EX_rd.eq(self.ID_EX_rdAddr),
             self.hazard.EX_MEM_rd.eq(self.EX_MEM_rdAddr),
-            self.hazard.IF_ID_rs1.eq(self.instruction[15:20]),
-            self.hazard.IF_ID_rs2.eq(self.instruction[20:25]),
+            self.hazard.IF_ID_rs1.eq(self.IF_ID_instr[15:20]),
+            self.hazard.IF_ID_rs2.eq(self.IF_ID_instr[20:25]),
             # Forward
-            self.forward.IF_ID_rs1.eq(self.instruction[15:20]),
+            self.forward.IF_ID_rs1.eq(self.IF_ID_instr[15:20]),
             self.forward.ID_EX_rs1.eq(self.ID_EX_rs1Addr),
-            self.forward.IF_ID_rs2.eq(self.instruction[20:25]),
+            self.forward.IF_ID_rs2.eq(self.IF_ID_instr[20:25]),
             self.forward.ID_EX_rs2.eq(self.ID_EX_rs2Addr),
             self.forward.EX_MEM_rd.eq(self.EX_MEM_rdAddr),
             self.forward.MEM_WB_rd.eq(self.MEM_WB_rdAddr),
@@ -171,7 +178,8 @@ class MipyfiveCore(Elaboratable):
             self.IF_ID.din.eq(
                 Cat(
                     PC,
-                    pcNext
+                    pcNext,
+                    self.instruction
                 )
             ),
             # PCout
@@ -188,9 +196,9 @@ class MipyfiveCore(Elaboratable):
 
         # --- Decode --------------------------------------------------------------------------------------------------
 
-        rs1Addr = self.instruction[15:20]
-        rs2Addr = self.instruction[20:25]
-        rdAddr  = self.instruction[7:12]
+        rs1Addr = self.IF_ID_instr[15:20]
+        rs2Addr = self.IF_ID_instr[20:25]
+        rdAddr  = self.IF_ID_instr[7:12]
 
         m.d.comb += [
             # Pipereg
@@ -218,16 +226,16 @@ class MipyfiveCore(Elaboratable):
                 )
             ),
             # Immgen
-            self.immgen.instruction.eq(self.instruction),
+            self.immgen.instruction.eq(self.IF_ID_instr),
             # Compare
             self.compare.in1.eq(rs1Data),
             self.compare.in2.eq(Mux(self.control.aluBsrc, self.immgen.imm, rs2Data)),
             self.compare.cmpType.eq(self.control.cmpType),
             # Control
-            self.control.instruction.eq(self.instruction),
+            self.control.instruction.eq(self.IF_ID_instr),
             # Regfile
-            self.regfile.rs1Addr.eq(self.instruction[15:20]),
-            self.regfile.rs2Addr.eq(self.instruction[20:25]),
+            self.regfile.rs1Addr.eq(self.IF_ID_instr[15:20]),
+            self.regfile.rs2Addr.eq(self.IF_ID_instr[20:25]),
             self.regfile.writeData.eq(self.lsu.lDataOut),
             self.regfile.writeEnable.eq(self.MEM_WB_regWrite),
             self.regfile.writeAddr.eq(self.MEM_WB_rdAddr)
@@ -303,7 +311,8 @@ class MipyfiveCore(Elaboratable):
                     self.EX_MEM_regWrite,
                     self.EX_MEM_mem2Reg,
                     self.EX_MEM_aluOut,
-                    self.EX_MEM_rdAddr
+                    self.EX_MEM_rdAddr,
+                    self.DataIn
                 )
             ),
             # LSU
@@ -323,7 +332,7 @@ class MipyfiveCore(Elaboratable):
 
         m.d.comb += [
             # Mem2Reg
-            mem2RegWire.eq(Mux(self.MEM_WB_mem2Reg, self.MEM_WB_aluOut, self.DataIn))
+            mem2RegWire.eq(Mux(self.MEM_WB_mem2Reg, self.MEM_WB_aluOut, self.MEM_WB_dataIn))
         ]
 
         return m

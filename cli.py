@@ -65,5 +65,5 @@ if __name__ == "__main__":
     if args.buildCore:
         print(f"[mipyfive - Info]: Generating RTL to --> {rtlFile}")
         m = MipyfiveCore(dataWidth=32, regCount=32, pcStart=pcStart, ISA=isaConfig)
-        main(m, ports=[m.instruction, m.DataIn, m.PCout, m.DataAddr, m.DataOut])
+        main(m, ports=[m.instruction, m.DataIn, m.PCout, m.DataAddr, m.DataOut, m.DataWE])
         print("[mipyfive - Info]: Done.")
