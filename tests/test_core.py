@@ -13,19 +13,27 @@ from mipyfive.types import *
 from examples.common.ram import *
 
 createVcd = False
+verboseProgram = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
 def test_core(program):
     def test(self):
         global createVcd
         global outputDir
+        global verboseProgram
+
+        # Assemble
+        if verboseProgram is True:
+            print(f"\n[INFO]: Assembled output:\n=========================")
+        programBinary = asm2Bin(program, verbose=verboseProgram)
+
         sim = Simulator(self.dut)
         def process():
             # NOTE/TODO: No assertions for now - add later
             # (i.e. test(s) will always pass - currently just using this for VCD dumping)
-            for i in range(len(program)):
-                yield self.dut.submodules.imem.memory[i].eq(program[i])
+            for i in range(len(programBinary)):
+                yield self.dut.submodules.imem.memory[i].eq(programBinary[i])
 
-            for i in range(len(program) + 5):
+            for i in range(len(programBinary) + 5):
                 yield Tick()
 
         sim.add_clock(1e-6)
@@ -121,17 +129,18 @@ class TestCore(unittest.TestCase):
         add    x0, x0, x0
         add    x0, x0, x0
     '''
-    programBinary = asm2Bin(program, debugPrint=True)
-    programBinary[8] |= 0x40000000  # Bug in generated srai instruction generated - this is a quick workaround
-    test_core = test_core(programBinary)
+    test_core = test_core(program)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--vcd", action="store_true", help="Emit VCD files.")
+    parser.add_argument("--verbose", action="store_true", help="Print out RISC-V asm and machine code.")
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
     if args.vcd is True:
         print(f"[INFO]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
+    if args.verbose is True:
+        verboseProgram = True
 
     unittest.main(verbosity=2)

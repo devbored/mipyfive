@@ -150,11 +150,7 @@ class TestController(unittest.TestCase):
     test_ctrl_srli = test_controller(asm2binI("slri", "x22", "x7", str(randImm12)),
         AluOp.SRL.value, CompareTypes.EQUAL.value, 1, 0, 0, Mem2RegCtrl.FROM_ALU.value, AluASrcCtrl.FROM_RS1.value,
             AluBSrcCtrl.FROM_IMM.value, 0, LSULoadCtrl.LSU_LB.value, LSUStoreCtrl.LSU_SB.value)
-
-    # TODO: Remove this comment later - Bug in generated srai instruction generated?
-    #       Specs say that srai's funct7 should be 0b0100000 - 30th bit seems missing here though
-    #       (Workaround this by artifically adding this bit for now via bitwise OR with 0x40000000)
-    test_ctrl_srai = test_controller(asm2binI("srai", "x20", "x17", "6") | 0x40000000,
+    test_ctrl_srai = test_controller(asm2binI("srai", "x20", "x17", "6"),
         AluOp.SRA.value, CompareTypes.EQUAL.value, 1, 0, 0, Mem2RegCtrl.FROM_ALU.value, AluASrcCtrl.FROM_RS1.value,
             AluBSrcCtrl.FROM_IMM.value, 0, LSULoadCtrl.LSU_LB.value, LSUStoreCtrl.LSU_SB.value)
 

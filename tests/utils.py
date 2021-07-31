@@ -12,6 +12,11 @@ def asm2binI(instr, rd, rs1, imm):
     ''' Simple wrapper around riscv_assembler.utils I-type assembler to convert bitstring --> raw int'''
     tk = Toolkit()
     bitstring = tk.I_type(instr, rs1, imm, rd)
+
+    # Bug in generated srai instruction generated - this is a quick workaround
+    if instr == "srai":
+        return int(bitstring, 2) | 0x40000000
+
     return int(bitstring, 2)
 
 def asm2binS(instr, rs2, imm, rs1):
@@ -40,7 +45,7 @@ def asm2binJ(instr, rd, imm):
     bitstring = tk.UJ_type(instr, imm, rd)
     return int(bitstring, 2)
 
-def asm2Bin(instructions, debugPrint=False):
+def asm2Bin(instructions, verbose=False):
     '''Convert RV32I asm program str to binary list\n
     (Operand order follows same arg orders as asm2bin<RISBUJ> util functions)
     '''
@@ -67,7 +72,10 @@ def asm2Bin(instructions, debugPrint=False):
         else:
             print(f"[mipyfive - Error]: assembleRv32iProgram - Unrecognized mnemonic ({mnemonic})")
             return None
-        if debugPrint is True:
-            print(f"Instr: {mnemonic}: {operands} --> {hex(binaryList[i])}")
+        if verbose is True:
+            if len(operands) == 3:
+                print(f"Instr: {mnemonic} {operands[0]}, {operands[1]}, {operands[2]} --> {hex(binaryList[i])}")
+            else:
+                print(f"Instr: {mnemonic} {operands[0]}, {operands[1]} --> {hex(binaryList[i])}")
 
     return binaryList

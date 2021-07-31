@@ -14,6 +14,7 @@ if __name__ == "__main__":
     parser.add_argument("--pcStart", dest="pcStart", default="0",
         help="PC start/reset value (Prefix value with '0x' for hex).")
     parser.add_argument("--buildCore", action="store_true", help="Build and output the main core")
+    parser.add_argument("--buildSmol", action="store_true", help="Build and output the smol SoC example")
     # TODO: Uncomment when extensions are available
     #parser.add_argument("--enableM", action="store_true", help="Enable the Multiply/Divide Extension")
     #parser.add_argument("--enableF", action="store_true", help="Enable the Single-Precision Floating Point Extension")
@@ -67,3 +68,7 @@ if __name__ == "__main__":
         m = MipyfiveCore(dataWidth=32, regCount=32, pcStart=pcStart, ISA=isaConfig)
         main(m, ports=[m.instruction, m.DataIn, m.PCout, m.DataAddr, m.DataOut, m.DataWE])
         print("[mipyfive - Info]: Done.")
+
+    # Example SoC(s)
+    if args.buildSmol:
+        pass
