@@ -6,6 +6,7 @@ from nmigen import *
 from nmigen.cli import main
 from mipyfive.core import *
 from mipyfive.types import *
+from examples.smol.smol import *
 
 if __name__ == "__main__":
     # Define args/opts
@@ -48,27 +49,48 @@ if __name__ == "__main__":
     outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "out"))
     if not os.path.exists(outputDir):
         os.makedirs(outputDir)
-    rtlFile = os.path.join(outputDir, f"top.{generateType}")
 
-    # Override sys.argv for nMigen main
-    nmigenMainArgs = [
-        "generate",
-        "-t", generateType,
-        rtlFile
-    ]
-    sys.argv[1:] = nmigenMainArgs
-
-    if not any([args.buildCore]):
+    if not any([args.buildCore, args.buildSmol]):
         print("[mipyfive - Info]: No build target given - defaulting to [--buildCore].")
         args.buildCore = True
 
     # Generate core RTL
     if args.buildCore:
+        rtlFile = os.path.join(outputDir, f"top.{generateType}")
         print(f"[mipyfive - Info]: Generating RTL to --> {rtlFile}")
         m = MipyfiveCore(dataWidth=32, regCount=32, pcStart=pcStart, ISA=isaConfig)
+        # Override sys.argv for nMigen main
+        nmigenMainArgs = [
+            "generate",
+            "-t", generateType,
+            rtlFile
+        ]
+        sys.argv[1:] = nmigenMainArgs
         main(m, ports=[m.instruction, m.DataIn, m.PCout, m.DataAddr, m.DataOut, m.DataWE])
         print("[mipyfive - Info]: Done.")
 
     # Example SoC(s)
     if args.buildSmol:
-        pass
+        rtlFile = os.path.join(outputDir, f"smol.{generateType}")
+        print(f"[mipyfive - Info]: Generating RTL to --> {rtlFile}")
+        m = smol()
+        # Override sys.argv for nMigen main
+        nmigenMainArgs = [
+            "generate",
+            "-t", generateType,
+            rtlFile
+        ]
+        sys.argv[1:] = nmigenMainArgs
+        main(m, ports=[
+            # Input(s)
+            m.BTN1,
+            # Output(s)
+            m.P1B1,
+            m.P1B2,
+            m.P1B3,
+            m.P1B4,
+            m.P1B7,
+            m.P1B8,
+            m.P1B9
+        ])
+        print("[mipyfive - Info]: Done.")
