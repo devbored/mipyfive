@@ -83,14 +83,8 @@ if __name__ == "__main__":
         sys.argv[1:] = nmigenMainArgs
         main(m, ports=[
             # Input(s)
-            m.BTN1,
+            m.btn,
             # Output(s)
-            m.P1B1,
-            m.P1B2,
-            m.P1B3,
-            m.P1B4,
-            m.P1B7,
-            m.P1B8,
-            m.P1B9
+            m.ssegLEDs
         ])
         print("[mipyfive - Info]: Done.")

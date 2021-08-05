@@ -6,9 +6,10 @@ from nmigen import *
 # |_|       4 |_3_| 2
 #
 class SSEGdriver(Elaboratable):
-    def __init__(self):
-        self.inVal  = Signal(4)
-        self.outVal = Signal(7)
+    def __init__(self, isCommonAnode=False):
+        self.isCommonAnode    = isCommonAnode
+        self.inVal              = Signal(4)
+        self.outVal             = Signal(7)
 
         # Segment mappings: 0 - 9
         self.segMap = Array([
@@ -26,5 +27,9 @@ class SSEGdriver(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.outVal.eq(self.segMap[self.inVal])
+        if self.isCommonAnode:
+            m.d.comb += self.outVal.eq(~self.segMap[self.inVal])
+        else:
+            m.d.comb += self.outVal.eq(self.segMap[self.inVal])
+
         return m

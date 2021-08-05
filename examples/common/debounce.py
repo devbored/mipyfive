@@ -20,22 +20,21 @@ class DebounceEdge(Elaboratable):
         dFF1    = Signal()
         dFF2    = Signal()
         counter = Signal(self.counterBits)
-        slowClk = ClockDomain(local=True)
-        slowClkReg = ClockSignal(domain="slowClk")
+        m.domains += ClockDomain("debounce", local=True, reset_less=True)
 
         # Toggle slowClk when counter val is reached
         with m.If(counter == self.counterVal):
             m.d.sync += [
                 counter.eq(0),
-                slowClkReg.eq(~slowClkReg)
+                ClockSignal("debounce").eq(~ClockSignal("debounce"))
             ]
         with m.Else():
             m.d.sync += [
                 counter.eq(counter + 1),
-                slowClkReg.eq(slowClkReg)
+                ClockSignal("debounce").eq(ClockSignal("debounce"))
             ]
 
-        m.d.slowClk += [
+        m.d.debounce += [
             # Edge-detect shift reg
             dFF0.eq(self.inVal),
             dFF1.eq(dFF0),

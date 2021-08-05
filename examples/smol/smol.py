@@ -7,43 +7,45 @@ from examples.common.debounce import *
 
 # TODO: Just an unrelated 'Hello World' example for now...
 class smol(Elaboratable):
-    def __init__(self):
-        self.dataWidth  = 32
-        self.BTN1    = Signal()
+    def __init__(self, needDebouncing=False, debounceDelay=1, isCommonAnode=False):
+        self.dataWidth          = 32
+        self.needDebouncing     = needDebouncing
+        self.btn                = Signal()
 
-        self.P1B1    = Signal()
-        self.P1B2    = Signal()
-        self.P1B3    = Signal()
-        self.P1B4    = Signal()
-        self.P1B7    = Signal()
-        self.P1B8    = Signal()
-        self.P1B9    = Signal()
+        self.ssegLEDs           = Signal(7)
 
         # --- Submodules ---
-        self.sseg0      = SSEGdriver()
-        self.debounce   = DebounceEdge(counterVal=1000000)
+        self.sseg0              = SSEGdriver(isCommonAnode=isCommonAnode)
+
+        # If button input is either noisy or does not output a single pulse when pressed
+        if self.needDebouncing:
+            self.debounce       = DebounceEdge(counterVal=debounceDelay)
 
     def elaborate(self, platform):
         m = Module()
         m.submodules.sseg0 = self.sseg0
-        m.submodules.debounce = self.debounce
+        if self.needDebouncing:
+            m.submodules.debounce = self.debounce
 
         segIndex    = Signal(ceilLog2(9))
-        segClk      = ClockDomain(local=True)
-        segInc      = ClockSignal(domain="segClk")
-
-        outSeg = Cat(self.P1B1, self.P1B2, self.P1B3, self.P1B4, self.P1B7, self.P1B8, self.P1B9)
+        m.domains   += ClockDomain("sseg", local=True, reset_less=True)
         m.d.comb += [
-            self.debounce.inVal.eq(self.BTN1),
-            self.sseg0.inVal.eq(4),
-            segInc.eq(self.debounce.outVal),
-            outSeg.eq(self.sseg0.outVal),
+            self.sseg0.inVal.eq(segIndex),
+            self.ssegLEDs.eq(self.sseg0.outVal),
         ]
 
+        if self.needDebouncing:
+            m.d.comb += [
+                ClockSignal("sseg").eq(self.debounce.outVal),
+                self.debounce.inVal.eq(self.btn)
+            ]
+        else:
+            m.d.comb += ClockSignal("sseg").eq(self.btn)
+
         with m.If(segIndex == 9):
-            m.d.segClk += segIndex.eq(0)
+            m.d.sseg += segIndex.eq(0)
         with m.Else():
-            m.d.segClk += segIndex.eq(segIndex + 1)
+            m.d.sseg += segIndex.eq(segIndex + 1)
 
         return m
 
