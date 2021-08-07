@@ -7,6 +7,7 @@ from nmigen.back.pysim import *
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from tests.utils import *
+from tests.programs import *
 from mipyfive.utils import *
 from mipyfive.core import *
 from mipyfive.types import *
@@ -25,6 +26,8 @@ def test_core(program):
         if verboseProgram is True:
             print(f"\n[INFO]: Assembled output:\n=========================")
         programBinary = asm2Bin(program, verbose=verboseProgram)
+        if programBinary is None:
+            raise ValueError('[mipyfive - test_core]: asm2Bin failed assembling.')
 
         sim = Simulator(self.dut)
         def process():
@@ -33,7 +36,7 @@ def test_core(program):
             for i in range(len(programBinary)):
                 yield self.dut.submodules.imem.memory[i].eq(programBinary[i])
 
-            for i in range(len(programBinary) + 5):
+            for i in range(len(programBinary) * 2):
                 yield Tick()
 
         sim.add_clock(1e-6)
@@ -71,65 +74,7 @@ class TestCore(unittest.TestCase):
             self.dut.submodules.core.DataIn.eq(self.dut.submodules.dmem.readData)
         ]
 
-    # Test each instruction
-    program = '''
-        addi   x1, x0, 4
-        slti   x2, x1, -6
-        sltiu  x3, x1, 6
-        xori   x4, x1, 255
-        ori    x5, x1, 3
-        andi   x6, x1, 15
-        slli   x7, x1, 29
-        slri   x8, x1, 1
-        srai   x9, x7, 3
-        add    x10, x1, x3
-        sub    x11, x1, x3
-        sll    x12, x1, x11
-        slt    x13, x1, x9
-        sltu   x14, x1, x9
-        xor    x15, x1, x8
-        srl    x16, x1, x3
-        sra    x17, x1, x3
-        or     x18, x1, x3
-        and    x19, x4, x5
-        lui    x20, 5
-        auipc  x21, 4
-        sb     x4, 16, x0
-        sh     x4, 20, x0
-        sw     x4, 24, x0
-        lb     x22, x0, 24
-        lh     x23, x0, 24
-        lw     x24, x0, 24
-        lbu    x25, x0, 24
-        lhu    x26, x0, 24
-        add    x0, x0, x0
-        add    x0, x0, x0
-        jalr   x22, x0, 68
-        add    x0, x0, x0
-        add    x0, x0, x0
-        jal    x23, 74
-        add    x0, x0, x0
-        add    x0, x0, x0
-        beq    x1, 6, x0
-        add    x0, x0, x0
-        add    x0, x0, x0
-        bne    x1, 4, x0
-        add    x0, x0, x0
-        add    x0, x0, x0
-        blt    x1, 4, x0
-        add    x0, x0, x0
-        add    x0, x0, x0
-        bge    x1, 4, x0
-        add    x0, x0, x0
-        add    x0, x0, x0
-        bltu   x1, 4, x0
-        add    x0, x0, x0
-        add    x0, x0, x0
-        bgeu   x1, 4, x0
-        add    x0, x0, x0
-        add    x0, x0, x0
-    '''
-    test_core = test_core(program)
+    test_core_arith = test_core(arithTestProgram)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -24,6 +24,7 @@ if __name__ == "__main__":
     if len(unknown) is not 0:
         print(f"[mipyfive - Error]: Unknown argument(s)/option(s):\n{unknown}\n")
         parser.print_help()
+        exit(0)
 
     isaString = "RV32I"
     isas = {
