@@ -100,21 +100,21 @@ class Mem2RegCtrl(Enum):
     FROM_ALU = 1
 
 class AluASrcCtrl(Enum):
-    FROM_RS1    = 0b00
-    FROM_ZERO   = 0b01
-    FROM_PC     = 0b10
-    FROM_PC4    = 0b11
+    FROM_RS1    = 0b0
+    FROM_PC     = 0b1
 
 class AluBSrcCtrl(Enum):
     FROM_RS2    = 0b00
     FROM_IMM    = 0b01
     FROM_ZERO   = 0b10
+    FROM_FOUR   = 0b11
 
 # ALU Input Data Hazard Forward Selection mux Ctrl types
 class AluForwardCtrl(Enum):
-    NO_FWD  = 0b00
-    MEM_WB  = 0b01
-    EX_MEM  = 0b10
+    NO_FWD      = 0b00
+    EX_MEM      = 0b01
+    MEM_WB      = 0b10
+    WB_BUFFER   = 0b11
 
 # Load-Store Unit control types
 class LSUStoreCtrl(Enum):
@@ -128,11 +128,6 @@ class LSULoadCtrl(Enum):
     LSU_LW  = 0b010
     LSU_LBU = 0b011
     LSU_LHU = 0b100
-
-# Regfile Output Control Hazard Forward Selection mux Ctrl types
-class RegfileOutForwardCtrl(Enum):
-    NO_FWD  = 0
-    EX_MEM  = 1
 
 # Compare unit types
 class CompareTypes(Enum):

@@ -16,7 +16,7 @@ from examples.common.ram import *
 createVcd = False
 verboseProgram = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
-def test_core(program):
+def test_core(program, regIndex=None, expectedValue=None):
     def test(self):
         global createVcd
         global outputDir
@@ -31,13 +31,14 @@ def test_core(program):
 
         sim = Simulator(self.dut)
         def process():
-            # NOTE/TODO: No assertions for now - add later
-            # (i.e. test(s) will always pass - currently just using this for VCD dumping)
             for i in range(len(programBinary)):
                 yield self.dut.submodules.imem.memory[i].eq(programBinary[i])
 
+            # Let the clock run for a bit
             for i in range(len(programBinary) * 2):
                 yield Tick()
+
+            self.assertEqual((yield self.dut.submodules.core.regfile.regArray[regIndex]), expectedValue)
 
         sim.add_clock(1e-6)
         sim.add_sync_process(process)
@@ -74,7 +75,7 @@ class TestCore(unittest.TestCase):
             self.dut.submodules.core.DataIn.eq(self.dut.submodules.dmem.readData)
         ]
 
-    test_core_arith = test_core(arithTestProgram)
+    test_core_arith = test_core(arithTestProgram, regIndex=31, expectedValue=0)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

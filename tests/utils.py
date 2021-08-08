@@ -95,7 +95,6 @@ def asm2Bin(instructions, verbose=False):
         processedInstrList.append(instr)
 
     # Main ASM loop
-    print(jumpLabelTable)
     for instr in processedInstrList:
         mnemonic = instr[:instr.find(' ')]
         operands = instr[instr.find(' '):].replace(' ', '').split(',')

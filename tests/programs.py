@@ -8,13 +8,13 @@ from mipyfive.types import *
 # --- Define test programs --------------------------------------------------------------------------------------------
 
 # Arithmetic
-arithTestVal1 = random.randint(Imm32Ranges.I_MIN.value, Imm32Ranges.I_MAX.value)
-arithTestVal2 = random.randint(Imm32Ranges.I_MIN.value, Imm32Ranges.I_MAX.value)
+arithTestVal1 = 5#random.randint(Imm32Ranges.I_MIN.value, Imm32Ranges.I_MAX.value)
+arithTestVal2 = 2#random.randint(Imm32Ranges.I_MIN.value, Imm32Ranges.I_MAX.value)
 arithTestProgram = f'''
     # --- Init test ---
     addi x1,  x0, {arithTestVal1}
     addi x2,  x0, {arithTestVal2}
-    addi x3,  x0, {abs(arithTestVal2) % 32}     ; Clamp max shift value by mod 32
+    addi x3,  x0, {abs(arithTestVal1) % 32}     ; Clamp max shift value by mod 32
     addi x4,  x0, {abs(arithTestVal2) % 32}     ; Clamp max shift value by mod 32
     addi x30, x0, 1                             ; Test index
     and  x31, x0, x0
