@@ -42,7 +42,7 @@ def asm2binU(instr, rd, imm):
     bitstring = tk.U_type(instr, imm, rd)
 
     # Possible bug with returned bitstring? Imm value seems to disappear - this is a workaround for now
-    return (int(bitstring, 2) | (int(imm) << 12))
+    return (int(bitstring,2) & ~(0xff << 12)) | (int(imm) << 12)
 
 def asm2binJ(instr, rd, imm):
     ''' Simple wrapper around riscv_assembler.utils J/UJ-type assembler to convert bitstring --> raw int'''

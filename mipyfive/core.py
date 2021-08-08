@@ -5,7 +5,6 @@ from .utils import *
 from .types import *
 from .immgen import *
 from .hazard import *
-from .compare import *
 from .forward import *
 from .pipereg import *
 from .regfile import *
@@ -30,7 +29,6 @@ class MipyfiveCore(Elaboratable):
         self.lsu        = LSU(dataWidth)
         self.immgen     = ImmGen() # TODO: Allow for arbitrary width?
         self.hazard     = HazardUnit(regCount)
-        self.compare    = CompareUnit(dataWidth)
         self.forward    = ForwardingUnit(regCount)
         self.regfile    = RegFile(dataWidth, regCount)
         self.control    = Controller()
