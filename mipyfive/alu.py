@@ -27,6 +27,8 @@ class ALU(Elaboratable):
         sgteuLogic  = Cat(~sltuLogic[0], Repl(0, 31))
         equalLogic  = (xorLogic) == 0
         nequalLogic = (xorLogic) != 0
+        passBLogic  = self.in2
+        add4ALogic  = self.in1 + 4
 
         with m.If(self.aluOp == AluOp.ADD):
             m.d.comb += self.out.eq(addLogic)
@@ -56,6 +58,10 @@ class ALU(Elaboratable):
             m.d.comb += self.out.eq(equalLogic)
         with m.Elif(self.aluOp == AluOp.NEQUAL):
             m.d.comb += self.out.eq(nequalLogic)
+        with m.Elif(self.aluOp == AluOp.PASS_B):
+            m.d.comb += self.out.eq(passBLogic)
+        with m.Elif(self.aluOp == AluOp.ADD4_A):
+            m.d.comb += self.out.eq(add4ALogic)
         # Default: Unknown AluOp should just resort to ADD
         with m.Else():
             m.d.comb += self.out.eq(self.in1 + self.in2)

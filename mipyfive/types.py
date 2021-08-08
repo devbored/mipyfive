@@ -83,20 +83,22 @@ class Rv32iTypes(Enum):
 
 # CPU control signal types
 class AluOp(Enum):
-    ADD     = 0b0000
-    SUB     = 0b0001
-    AND     = 0b0010
-    OR      = 0b0011
-    XOR     = 0b0100
-    SLL     = 0b0101 # Shift Left Logically
-    SRL     = 0b0110 # Shift Right Logically
-    SRA     = 0b0111 # Shift Right Arithmetically
-    EQUAL   = 0b1000
-    NEQUAL  = 0b1001
-    SLT     = 0b1010 # Set if Less Than
-    SLTU    = 0b1011 # Set if Less Than (Unsigned)
-    SGTE    = 0b1100 # Set if Greater Than or Equal
-    SGTEU   = 0b1101 # Set if Greater Than or Equal (Unsigned)
+    ADD      = 0b0000
+    SUB      = 0b0001
+    AND      = 0b0010
+    OR       = 0b0011
+    XOR      = 0b0100
+    SLL      = 0b0101 # Shift Left Logically
+    SRL      = 0b0110 # Shift Right Logically
+    SRA      = 0b0111 # Shift Right Arithmetically
+    EQUAL    = 0b1000
+    NEQUAL   = 0b1001
+    SLT      = 0b1010 # Set if Less Than
+    SLTU     = 0b1011 # Set if Less Than (Unsigned)
+    SGTE     = 0b1100 # Set if Greater Than or Equal
+    SGTEU    = 0b1101 # Set if Greater Than or Equal (Unsigned)
+    PASS_B   = 0b1110 # Pass the B input to output
+    ADD4_A   = 0b1111 # Add 4 to A input
 
 # Mem2Reg mux select types
 class Mem2RegCtrl(Enum):
@@ -108,10 +110,8 @@ class AluASrcCtrl(Enum):
     FROM_PC     = 0b1
 
 class AluBSrcCtrl(Enum):
-    FROM_RS2    = 0b00
-    FROM_IMM    = 0b01
-    FROM_ZERO   = 0b10
-    FROM_FOUR   = 0b11
+    FROM_RS2    = 0b0
+    FROM_IMM    = 0b1
 
 # ALU Input Data Hazard Forward Selection mux Ctrl types
 class AluForwardCtrl(Enum):
