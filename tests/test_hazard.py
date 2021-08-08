@@ -11,38 +11,36 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mipyfive.types import *
 from mipyfive.hazard import *
 
-def expectedHazardResolution(IF_ID_rs1, IF_ID_rs2, ID_EX_memRead, ID_EX_rd):
-    IF_stall     = 1
-    IF_ID_stall  = 1
-    ID_EX_flush  = 0
-
-    if ID_EX_memRead and ((ID_EX_rd == IF_ID_rs1) or (ID_EX_rd == IF_ID_rs2)):
-        IF_stall     = 0
-        IF_ID_stall  = 0
-        ID_EX_flush  = 1
-    
-    return IF_stall, IF_ID_stall, ID_EX_flush
-
 createVcd = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
-def test_hazard(IF_ID_rs1, IF_ID_rs2, ID_EX_memRead, ID_EX_rd):
+def test_hazard(
+    Jump, Branch, BranchMispredict, IF_valid, MEM_valid, IF_ID_rs1, IF_ID_rs2, ID_EX_memRead, ID_EX_rd,
+        IF_stall, IF_ID_stall, ID_EX_stall, EX_MEM_stall, MEM_WB_stall, IF_ID_flush, ID_EX_flush, EX_MEM_flush
+    ):
     def test(self):
         global createVcd
         global outputDir
         sim = Simulator(self.dut)
         def process():
-            yield self.dut.ID_EX_memRead.eq(ID_EX_memRead)
-            yield self.dut.ID_EX_rd.eq(ID_EX_rd)
+            yield self.dut.Jump.eq(Jump)
+            yield self.dut.Branch.eq(Branch)
+            yield self.dut.BranchMispredict.eq(BranchMispredict)
+            yield self.dut.IF_valid.eq(IF_valid)
+            yield self.dut.MEM_valid.eq(MEM_valid)
             yield self.dut.IF_ID_rs1.eq(IF_ID_rs1)
             yield self.dut.IF_ID_rs2.eq(IF_ID_rs2)
+            yield self.dut.ID_EX_memRead.eq(ID_EX_memRead)
+            yield self.dut.ID_EX_rd.eq(ID_EX_rd)
             yield Delay(1e-6)
 
-            IF_stall, IF_ID_stall, ID_EX_flush = expectedHazardResolution(
-                IF_ID_rs1, IF_ID_rs2, ID_EX_memRead, ID_EX_rd
-            )
             self.assertEqual((yield self.dut.IF_stall), IF_stall)
             self.assertEqual((yield self.dut.IF_ID_stall), IF_ID_stall)
+            self.assertEqual((yield self.dut.ID_EX_stall), ID_EX_stall)
+            self.assertEqual((yield self.dut.EX_MEM_stall), EX_MEM_stall)
+            self.assertEqual((yield self.dut.MEM_WB_stall), MEM_WB_stall)
+            self.assertEqual((yield self.dut.IF_ID_flush), IF_ID_flush)
             self.assertEqual((yield self.dut.ID_EX_flush), ID_EX_flush)
+            self.assertEqual((yield self.dut.EX_MEM_flush), EX_MEM_flush)
         sim.add_process(process)
         if createVcd:
             if not os.path.exists(outputDir):
@@ -58,14 +56,36 @@ class TestHazard(unittest.TestCase):
     def setUp(self):
         self.dut = HazardUnit(regCount=32)
 
-    IF_ID_rs1       = random.randint(0, 31)
-    IF_ID_rs2       = random.randint(0, 31)
-    ID_EX_rd        = random.randint(0, 31)
-    ID_EX_memRead   = random.randint(0, 1)
-    test_hazard_random = test_hazard(IF_ID_rs1, IF_ID_rs2, ID_EX_memRead, ID_EX_rd)
-    
-    test_non_hazard = test_hazard(IF_ID_rs1=4, IF_ID_rs2=3, ID_EX_memRead=1, ID_EX_rd=12)
-    test_hazard = test_hazard(IF_ID_rs1=4, IF_ID_rs2=5, ID_EX_memRead=1, ID_EX_rd=5)
+    test_branch_flush_hazard = test_hazard(
+        Jump=0, Branch=1, BranchMispredict=1, IF_valid=1, MEM_valid=1, IF_ID_rs1=0, IF_ID_rs2=0, ID_EX_memRead=0,
+            ID_EX_rd=0, IF_stall=0, IF_ID_stall=0, ID_EX_stall=0, EX_MEM_stall=0, MEM_WB_stall=0, IF_ID_flush=1,
+                ID_EX_flush=1, EX_MEM_flush=1
+    )
+    test_jump_flush_hazard = test_hazard(
+        Jump=1, Branch=0, BranchMispredict=0, IF_valid=1, MEM_valid=1, IF_ID_rs1=0, IF_ID_rs2=0, ID_EX_memRead=0,
+            ID_EX_rd=0, IF_stall=0, IF_ID_stall=0, ID_EX_stall=0, EX_MEM_stall=0, MEM_WB_stall=0, IF_ID_flush=1,
+                ID_EX_flush=1, EX_MEM_flush=0
+    )
+    test_load_stall_hazard = test_hazard(
+        Jump=0, Branch=0, BranchMispredict=0, IF_valid=1, MEM_valid=1, IF_ID_rs1=5, IF_ID_rs2=0, ID_EX_memRead=1,
+            ID_EX_rd=5, IF_stall=1, IF_ID_stall=1, ID_EX_stall=0, EX_MEM_stall=0, MEM_WB_stall=0, IF_ID_flush=0,
+                ID_EX_flush=1, EX_MEM_flush=0
+    )
+    test_ifetch_stall_hazard = test_hazard(
+        Jump=0, Branch=0, BranchMispredict=0, IF_valid=0, MEM_valid=1, IF_ID_rs1=0, IF_ID_rs2=0, ID_EX_memRead=0,
+            ID_EX_rd=0, IF_stall=1, IF_ID_stall=1, ID_EX_stall=0, EX_MEM_stall=0, MEM_WB_stall=0, IF_ID_flush=0,
+                ID_EX_flush=0, EX_MEM_flush=0
+    )
+    test_dfetch_stall_hazard = test_hazard(
+        Jump=0, Branch=0, BranchMispredict=0, IF_valid=1, MEM_valid=0, IF_ID_rs1=0, IF_ID_rs2=0, ID_EX_memRead=0,
+            ID_EX_rd=0, IF_stall=1, IF_ID_stall=1, ID_EX_stall=1, EX_MEM_stall=1, MEM_WB_stall=1, IF_ID_flush=0,
+                ID_EX_flush=0, EX_MEM_flush=0
+    )
+    test_non_hazard = test_hazard(
+        Jump=0, Branch=0, BranchMispredict=0, IF_valid=1, MEM_valid=1, IF_ID_rs1=0, IF_ID_rs2=0, ID_EX_memRead=0,
+            ID_EX_rd=0, IF_stall=0, IF_ID_stall=0, ID_EX_stall=0, EX_MEM_stall=0, MEM_WB_stall=0, IF_ID_flush=0,
+                ID_EX_flush=0, EX_MEM_flush=0
+    )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -75,5 +95,5 @@ if __name__ == "__main__":
     if args.vcd is True:
         print(f"[INFO]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
-    
+
     unittest.main(verbosity=2)
