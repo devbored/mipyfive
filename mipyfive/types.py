@@ -91,8 +91,12 @@ class AluOp(Enum):
     SLL     = 0b0101 # Shift Left Logically
     SRL     = 0b0110 # Shift Right Logically
     SRA     = 0b0111 # Shift Right Arithmetically
-    SLT     = 0b1000 # Set if Less Than
-    SLTU    = 0b1001 # Set if Less Than (Unsigned)
+    EQUAL   = 0b1000
+    NEQUAL  = 0b1001
+    SLT     = 0b1010 # Set if Less Than
+    SLTU    = 0b1011 # Set if Less Than (Unsigned)
+    SGTE    = 0b1100 # Set if Greater Than or Equal
+    SGTEU   = 0b1101 # Set if Greater Than or Equal (Unsigned)
 
 # Mem2Reg mux select types
 class Mem2RegCtrl(Enum):
@@ -128,15 +132,6 @@ class LSULoadCtrl(Enum):
     LSU_LW  = 0b010
     LSU_LBU = 0b011
     LSU_LHU = 0b100
-
-# Compare unit types
-class CompareTypes(Enum):
-    EQUAL           = 0b000
-    NOT_EQUAL       = 0b001
-    LESS_THAN       = 0b010
-    LESS_THAN_U     = 0b011
-    GREATER_EQUAL   = 0b100
-    GREATER_EQUAL_U = 0b101
 
 # Supported ISAs
 class CoreISAconfigs(Enum):

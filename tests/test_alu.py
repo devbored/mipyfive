@@ -54,11 +54,31 @@ def test_runner(in1, in2, aluOp):
                     self.assertEqual((yield self.dut.out), ((in1 - (1 << 32)) >> in2) & 0xffffffff)
                 else:
                     self.assertEqual((yield self.dut.out), in1 >> in2)
+            if aluOp is AluOp.EQUAL:
+                yield self.dut.aluOp.eq(AluOp.EQUAL.value)
+                yield Delay(1e-6)
+                self.assertEqual((yield self.dut.out), in1 == in2)
+            if aluOp is AluOp.NEQUAL:
+                yield self.dut.aluOp.eq(AluOp.NEQUAL.value)
+                yield Delay(1e-6)
+                self.assertEqual((yield self.dut.out), in1 != in2)
+            if aluOp is AluOp.SLT:
+                yield self.dut.aluOp.eq(AluOp.SLT.value)
+                yield Delay(1e-6)
+                self.assertEqual((yield self.dut.out), in1 < in2)
+            if aluOp is AluOp.SLTU:
+                yield self.dut.aluOp.eq(AluOp.SLTU.value)
+                yield Delay(1e-6)
+                self.assertEqual((yield self.dut.out), (in1 & 0xffffffff) < (in2 & 0xffffffff))
+            if aluOp is AluOp.SGTE:
+                yield self.dut.aluOp.eq(AluOp.SGTE.value)
+                yield Delay(1e-6)
+                self.assertEqual((yield self.dut.out), in1 >= in2)
+            if aluOp is AluOp.SGTEU:
+                yield self.dut.aluOp.eq(AluOp.SGTEU.value)
+                yield Delay(1e-6)
+                self.assertEqual((yield self.dut.out), (in1 & 0xffffffff) >= (in2 & 0xffffffff))
 
-            # Test ALU flag output(s)
-            if (yield self.dut.out) == 0:
-                self.assertEqual((yield self.dut.zflag), 1)
-        
         sim.add_process(process)
         if createVcd:
             if not os.path.exists(outputDir):
@@ -74,13 +94,19 @@ class TestAlu(unittest.TestCase):
     def setUp(self):
         self.dut = ALU(width=32)
 
-    int1 = random.randint(0, 2147483647)
-    int2 = random.randint(0, 2147483647)
-    test_alu_add = test_runner(int1, int2, AluOp.ADD)
-    test_alu_sub = test_runner(int1, int2, AluOp.SUB)
-    test_alu_and = test_runner(int1, int2, AluOp.AND)
-    test_alu_or  = test_runner(int1, int2, AluOp.OR)
-    test_alu_xor = test_runner(int1, int2, AluOp.XOR)
+    int1 = 5#random.randint(0, 2147483647)
+    int2 = 5#random.randint(0, 2147483647)
+    test_alu_add    = test_runner(int1, int2, AluOp.ADD)
+    test_alu_sub    = test_runner(int1, int2, AluOp.SUB)
+    test_alu_and    = test_runner(int1, int2, AluOp.AND)
+    test_alu_or     = test_runner(int1, int2, AluOp.OR)
+    test_alu_xor    = test_runner(int1, int2, AluOp.XOR)
+    test_alu_slt    = test_runner(int1, int2, AluOp.SLT)
+    test_alu_sltu   = test_runner(int1, int2, AluOp.SLTU)
+    test_alu_equal  = test_runner(int1, int2, AluOp.EQUAL)
+    test_alu_nequal = test_runner(int1, int2, AluOp.NEQUAL)
+    test_alu_sgte   = test_runner(int1, int2, AluOp.SGTE)
+    test_alu_sgetu  = test_runner(int1, int2, AluOp.SGTEU)
 
     int1 = random.randint(0, 4294967295)
     int2 = random.randint(0, 31)
