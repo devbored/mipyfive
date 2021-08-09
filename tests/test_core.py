@@ -56,8 +56,8 @@ class TestCore(unittest.TestCase):
     def setUp(self):
         self.dut  = Module()
         self.dut.submodules.core = MipyfiveCore(dataWidth=32, regCount=32, pcStart=-8, ISA=CoreISAconfigs.RV32I.value)
-        self.dut.submodules.imem = RAM(width=32, depth=256, wordAligned=True)
-        self.dut.submodules.dmem = RAM(width=32, depth=256)
+        self.dut.submodules.imem = RAM(width=32, depth=512, wordAligned=True)
+        self.dut.submodules.dmem = RAM(width=32, depth=512)
 
         self.dut.d.comb += [
             # imem connections
@@ -72,7 +72,9 @@ class TestCore(unittest.TestCase):
             self.dut.submodules.dmem.writeAddr.eq(self.dut.submodules.core.DataAddr),
             # core connections
             self.dut.submodules.core.instruction.eq(self.dut.submodules.imem.readData),
-            self.dut.submodules.core.DataIn.eq(self.dut.submodules.dmem.readData)
+            self.dut.submodules.core.DataIn.eq(self.dut.submodules.dmem.readData),
+            self.dut.submodules.core.IF_valid.eq(1),
+            self.dut.submodules.core.MEM_valid.eq(1)
         ]
 
     test_core_arith = test_core(arithTestProgram, regIndex=31, expectedValue=0)

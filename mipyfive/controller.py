@@ -19,6 +19,7 @@ class Controller(Elaboratable):
         self.aluBsrc        = Signal()
         self.branch         = Signal()
         self.jump           = Signal()
+        self.jumpR          = Signal()
 
     def elaborate(self, platform):
         m = Module()
@@ -36,11 +37,12 @@ class Controller(Elaboratable):
                     self.memRead.eq(0),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
-                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LB.value),
-                    self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SB.value),
+                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LW.value),
+                    self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SW.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_RS2.value),
                     self.branch.eq(0),
                     self.jump.eq(0),
+                    self.jumpR.eq(0)
                 ]
                 with m.Switch(Cat(opcode, funct3, funct7)):
                     with m.Case(Rv32iInstructions.ADD.value):
@@ -71,6 +73,7 @@ class Controller(Elaboratable):
                 m.d.comb += [
                     self.jump.eq(0),
                     self.branch.eq(0),
+                    self.jumpR.eq(0),
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
@@ -80,7 +83,7 @@ class Controller(Elaboratable):
                     m.d.comb += [
                         self.memRead.eq(1),
                         self.aluOp.eq(AluOp.ADD.value),
-                        self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SB.value),
+                        self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SW.value),
                         self.mem2Reg.eq(Mem2RegCtrl.FROM_MEM.value)
                     ]
                     with m.Switch(Cat(opcode, funct3)):
@@ -97,12 +100,15 @@ class Controller(Elaboratable):
                 with m.Else():
                     m.d.comb += [
                         self.memRead.eq(0),
-                        self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LB.value),
-                        self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SB.value),
+                        self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LW.value),
+                        self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SW.value),
                     ]
                     with m.Switch(Cat(opcode, funct3, Repl(C(0), len(funct7)))):
                         with m.Case(Rv32iInstructions.JALR.value):
                             m.d.comb += [
+                                self.jumpR.eq(1),
+                                self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LW.value),
+                                self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SW.value),
                                 self.aluAsrc.eq(AluASrcCtrl.FROM_PC.value),
                                 self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value),
                                 self.aluOp.eq(AluOp.ADD4_A.value),
@@ -163,6 +169,7 @@ class Controller(Elaboratable):
             with m.Case(Rv32iTypes.I_Sync.value, Rv32iTypes.I_Sys.value):
                 # TODO: Essentially a nop for now - revisit later...
                 m.d.comb += [
+                    self.jumpR.eq(0),
                     self.branch.eq(0),
                     self.jump.eq(0),
                     self.regWrite.eq(0),
@@ -170,8 +177,8 @@ class Controller(Elaboratable):
                     self.memRead.eq(0),
                     self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
-                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LB.value),
-                    self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SB.value),
+                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LW.value),
+                    self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SW.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
                 ]
@@ -179,6 +186,7 @@ class Controller(Elaboratable):
             # --- S-Type ---
             with m.Case(Rv32iTypes.S):
                 m.d.comb += [
+                    self.jumpR.eq(0),
                     self.branch.eq(0),
                     self.jump.eq(0),
                     self.regWrite.eq(0),
@@ -186,7 +194,7 @@ class Controller(Elaboratable):
                     self.memRead.eq(0),
                     self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
-                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LB.value),
+                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LW.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
                 ]
@@ -201,6 +209,7 @@ class Controller(Elaboratable):
             # --- B-Type ---
             with m.Case(Rv32iTypes.B):
                 m.d.comb += [
+                    self.jumpR.eq(0),
                     self.branch.eq(1),
                     self.jump.eq(0),
                     self.regWrite.eq(0),
@@ -208,8 +217,8 @@ class Controller(Elaboratable):
                     self.memRead.eq(0),
                     self.aluOp.eq(AluOp.ADD.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
-                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LB.value),
-                    self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SB.value),
+                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LW.value),
+                    self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SW.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_RS2.value)
                 ]
@@ -233,13 +242,14 @@ class Controller(Elaboratable):
             with m.Case(Rv32iTypes.U_Add.value, Rv32iTypes.U_Load.value):
                 m.d.comb += [
                     self.jump.eq(0),
+                    self.jumpR.eq(0),
                     self.branch.eq(0),
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
                     self.memRead.eq(0),
                     self.aluOp.eq(AluOp.ADD.value),
-                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LB.value),
-                    self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SB.value),
+                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LW.value),
+                    self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SW.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_PC.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
@@ -253,14 +263,15 @@ class Controller(Elaboratable):
             with m.Case(Rv32iTypes.J):
                 m.d.comb += [
                     self.jump.eq(1),
+                    self.jumpR.eq(0),
                     self.branch.eq(0),
                     self.regWrite.eq(1),
                     self.memWrite.eq(0),
                     self.memRead.eq(0),
                     self.aluOp.eq(AluOp.ADD4_A.value),
                     self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value),
-                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LB.value),
-                    self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SB.value),
+                    self.lsuLoadCtrl.eq(LSULoadCtrl.LSU_LW.value),
+                    self.lsuStoreCtrl.eq(LSUStoreCtrl.LSU_SW.value),
                     self.aluAsrc.eq(AluASrcCtrl.FROM_PC.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
                 ]

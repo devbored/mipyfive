@@ -14,7 +14,7 @@ class ALU(Elaboratable):
         m = Module()
 
         addLogic    = self.in1 + self.in2
-        subLogic    = self.in1 + ~(self.in2) + 1
+        subLogic    = self.in1 + (~(self.in2) + 1)
         andLogic    = self.in1 & self.in2
         orLogic     = self.in1 | self.in2
         xorLogic    = self.in1 ^ self.in2

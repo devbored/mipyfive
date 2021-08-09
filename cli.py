@@ -67,7 +67,16 @@ if __name__ == "__main__":
             rtlFile
         ]
         sys.argv[1:] = nmigenMainArgs
-        main(m, ports=[m.instruction, m.DataIn, m.PCout, m.DataAddr, m.DataOut, m.DataWE])
+        main(m, ports=[
+            m.instruction,
+            m.DataIn,
+            m.IF_valid,
+            m.MEM_valid,
+            m.PCout,
+            m.DataAddr,
+            m.DataOut,
+            m.DataWE
+        ])
         print("[mipyfive - Info]: Done.")
 
     # Example SoC(s)

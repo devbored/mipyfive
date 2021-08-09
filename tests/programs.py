@@ -8,8 +8,10 @@ from mipyfive.types import *
 # --- Define test programs --------------------------------------------------------------------------------------------
 
 # Arithmetic
-arithTestVal1 = 5#random.randint(Imm32Ranges.I_MIN.value, Imm32Ranges.I_MAX.value)
-arithTestVal2 = 2#random.randint(Imm32Ranges.I_MIN.value, Imm32Ranges.I_MAX.value)
+#arithTestVal1 = random.randint(Imm32Ranges.I_MIN.value, Imm32Ranges.I_MAX.value)
+#arithTestVal2 = random.randint(Imm32Ranges.I_MIN.value, Imm32Ranges.I_MAX.value)
+arithTestVal1 = random.randint(0, Imm32Ranges.I_MAX.value//2)
+arithTestVal2 = random.randint(0, Imm32Ranges.I_MAX.value//2)
 arithTestProgram = f'''
     # --- Init test ---
     addi x1,  x0, {arithTestVal1}
@@ -77,10 +79,11 @@ arithTestProgram = f'''
     addi  x30, x30, 1
     bne   x20, x19, FAIL
     addi  x30, x30, 1
-    STALL: jal x0, STALL
-
-    FAIL:  add x31, x0, x30
-    STALL: jal x0, STALL
+    jal   x29, STALL
+    FAIL:   add x0, x0, x0  ; NOP
+            add x31, x0, x30
+    STALL:  add x0, x0, x0  ; NOP
+            jal x0, STALL
 '''
 
 # TODO: Add more tests...

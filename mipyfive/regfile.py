@@ -16,16 +16,10 @@ class RegFile(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        with m.If((self.rs1Addr == self.writeAddr) & self.writeEnable):
-            m.d.comb += self.rs1Data.eq(self.writeData)
-        with m.Else():
-            m.d.comb += self.rs1Data.eq(self.regArray[self.rs1Addr])
-
-        with m.If((self.rs2Addr == self.writeAddr) & self.writeEnable):
-            m.d.comb += self.rs2Data.eq(self.writeData)
-        with m.Else():
-            m.d.comb += self.rs2Data.eq(self.regArray[self.rs2Addr])
-
+        m.d.comb += [
+            self.rs1Data.eq(self.regArray[self.rs1Addr]),
+            self.rs2Data.eq(self.regArray[self.rs2Addr])
+        ]
         with m.If(self.writeEnable):
             m.d.sync += self.regArray[self.writeAddr].eq(self.writeData)
 
