@@ -147,16 +147,14 @@ class MipyfiveCore(Elaboratable):
         m.submodules.EX_MEM     = self.EX_MEM
         m.submodules.MEM_WB     = self.MEM_WB
 
-        PC                  = Signal(32, reset=self.pcStart)
         WB_Buffer           = Signal(self.dataWidth)
         WB_Buffer_rd        = Signal(self.addrBits)
         WB_BUFFER_reg_write = Signal()
-
-        mem2RegWire = Signal(self.dataWidth)
-        aluAin      = Signal(self.dataWidth)
-        fwdAluAin   = Signal(self.dataWidth)
-        aluBin      = Signal(self.dataWidth)
-        fwdAluBin   = Signal(self.dataWidth)
+        mem2RegWire         = Signal(self.dataWidth)
+        aluAin              = Signal(self.dataWidth)
+        fwdAluAin           = Signal(self.dataWidth)
+        aluBin              = Signal(self.dataWidth)
+        fwdAluBin           = Signal(self.dataWidth)
 
         # Hazard and Forwarding setup/logic
         m.d.comb += [
@@ -185,10 +183,20 @@ class MipyfiveCore(Elaboratable):
 
         # --- Fetch ---------------------------------------------------------------------------------------------------
 
-        pcNext = Signal(32)
+        prefetch    = Signal(32, reset=self.pcStart+4)
+        PC          = Signal(32, reset=self.pcStart)
+        pcNext      = Signal(32)
         takeBranch = self.EX_MEM_branch & self.EX_MEM_aluOut[0]
 
-        m.d.sync += PC.eq(pcNext)
+        m.d.sync += prefetch.eq(pcNext)
+        with m.If(~self.IF_valid):
+            m.d.sync += PC.eq(PC)
+            m.d.comb += self.PCout.eq(PC)
+        with m.Else():
+            m.d.sync += PC.eq(prefetch)
+            m.d.comb += self.PCout.eq(prefetch)
+
+
         m.d.comb += [
             # Pipereg
             self.IF_ID.rst.eq(self.hazard.IF_ID_flush),
@@ -198,9 +206,7 @@ class MipyfiveCore(Elaboratable):
                     PC,
                     self.instruction
                 )
-            ),
-            # PCout
-            self.PCout.eq(PC)
+            )
         ]
         with m.If(takeBranch):
             m.d.comb += pcNext.eq(self.EX_MEM_pc + (self.EX_MEM_imm << 1))
@@ -209,9 +215,9 @@ class MipyfiveCore(Elaboratable):
         with m.Elif(self.ID_EX_jumpR):
             m.d.comb += pcNext.eq(self.ID_EX_pc + (fwdAluAin << 1))
         with m.Elif(~self.IF_valid):
-            m.d.comb += pcNext.eq(PC)
+            m.d.comb += pcNext.eq(prefetch)
         with m.Else():
-            m.d.comb += pcNext.eq(PC + 4)
+            m.d.comb += pcNext.eq(prefetch + 4)
 
         # --- Decode --------------------------------------------------------------------------------------------------
 
