@@ -16,7 +16,7 @@ from examples.common.ram import *
 createVcd = False
 verboseProgram = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
-def test_core(program, regIndex=None, expectedValue=None):
+def test_core(program, initRegs=[], expectedRegs=[]):
     def test(self):
         global createVcd
         global outputDir
@@ -31,14 +31,35 @@ def test_core(program, regIndex=None, expectedValue=None):
 
         sim = Simulator(self.dut)
         def process():
+            # Init imem
             for i in range(len(programBinary)):
                 yield self.dut.submodules.imem.memory[i].eq(programBinary[i])
 
+            # Init regfile
+            for i in range(len(initRegs)):
+                if type(initRegs[i]) is not tuple:
+                    raise ValueError('[mipyfive - test_core]: initRegs needs to be a list of tuples.')
+                if len(initRegs[i]) < 2:
+                    raise ValueError('[mipyfive - test_core]: initReg tuple needs 2 elements (regIndex, value).')
+                yield self.dut.submodules.core.regfile.regArray[initRegs[i][0]].eq(initRegs[i][1])
+
             # Let the clock run for a bit
             for i in range(len(programBinary) * 2):
+                if i < 1:
+                    yield self.dut.submodules.core.IF_valid.eq(0)
+                else:
+                    yield self.dut.submodules.core.IF_valid.eq(1)
+
                 yield Tick()
 
-            self.assertEqual((yield self.dut.submodules.core.regfile.regArray[regIndex]), expectedValue)
+            # Evaluate from expectedRegs
+            for i in range(len(expectedRegs)):
+                if type(expectedRegs[i]) is not tuple:
+                    raise ValueError('[mipyfive - test_core]: expectedRegs needs to be a list of tuples.')
+                if len(expectedRegs[i]) < 2:
+                    raise ValueError('[mipyfive - test_core]: expectedRegs tuple needs 2 elements (regIndex, value).')
+                self.assertEqual((yield self.dut.submodules.core.regfile.regArray[expectedRegs[i][0]]),
+                    expectedRegs[i][1])
 
         sim.add_clock(1e-6)
         sim.add_sync_process(process)
@@ -55,7 +76,7 @@ def test_core(program, regIndex=None, expectedValue=None):
 class TestCore(unittest.TestCase):
     def setUp(self):
         self.dut  = Module()
-        self.dut.submodules.core = MipyfiveCore(dataWidth=32, regCount=32, pcStart=-8, ISA=CoreISAconfigs.RV32I.value)
+        self.dut.submodules.core = MipyfiveCore(dataWidth=32, regCount=32, pcStart=0, ISA=CoreISAconfigs.RV32I.value)
         self.dut.submodules.imem = RAM(width=32, depth=512, wordAligned=True)
         self.dut.submodules.dmem = RAM(width=32, depth=512)
 
@@ -73,11 +94,16 @@ class TestCore(unittest.TestCase):
             # core connections
             self.dut.submodules.core.instruction.eq(self.dut.submodules.imem.readData),
             self.dut.submodules.core.DataIn.eq(self.dut.submodules.dmem.readData),
-            self.dut.submodules.core.IF_valid.eq(1),
             self.dut.submodules.core.MEM_valid.eq(1)
         ]
 
-    test_core_arith = test_core(arithTestProgram, regIndex=31, expectedValue=0)
+    # Core tests - programs in "tests/programs.py"
+    arithTestInitRegfile = [
+        (1,arithRs1), (2,arithRs2), (3,arithRs3), (4,arithRs4), (5,arithRs5), (6,arithRs6), (7,arithRs7),
+            (8,arithRs8), (9,arithRs9), (10,arithRs10), (11,arithRs11), (12,arithRs12)
+    ]
+    arithTestExpectedRegfile = [(31, 0)]
+    test_core_arith = test_core(arithTestProgram, arithTestInitRegfile, arithTestExpectedRegfile)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
