@@ -24,7 +24,7 @@ def test_core(program, initRegs=[], expectedRegs=[]):
 
         # Assemble
         if verboseProgram is True:
-            print(f"\n[INFO]: Assembled output:\n=========================")
+            print(f"\n----------------------------------------------------------------------")
         programBinary = asm2Bin(program, verbose=verboseProgram)
         if programBinary is None:
             raise ValueError('[mipyfive - test_core]: asm2Bin failed assembling.')
@@ -38,7 +38,7 @@ def test_core(program, initRegs=[], expectedRegs=[]):
             # Init regfile
             for i in range(len(initRegs)):
                 if type(initRegs[i]) is not tuple:
-                    raise ValueError('[mipyfive - test_core]: initRegs needs to be a list of tuples.')
+                    raise ValueError(f'[mipyfive - test_core]: "{initRegs[i]}" at index "{i}" needs to be a tuple.')
                 if len(initRegs[i]) < 2:
                     raise ValueError('[mipyfive - test_core]: initReg tuple needs 2 elements (regIndex, value).')
                 yield self.dut.submodules.core.regfile.regArray[initRegs[i][0]].eq(initRegs[i][1])
@@ -55,7 +55,7 @@ def test_core(program, initRegs=[], expectedRegs=[]):
             # Evaluate from expectedRegs
             for i in range(len(expectedRegs)):
                 if type(expectedRegs[i]) is not tuple:
-                    raise ValueError('[mipyfive - test_core]: expectedRegs needs to be a list of tuples.')
+                    raise ValueError(f'[mipyfive - test_core]: "{expectedRegs[i]}" at index "{i}" needs to be a tuple.')
                 if len(expectedRegs[i]) < 2:
                     raise ValueError('[mipyfive - test_core]: expectedRegs tuple needs 2 elements (regIndex, value).')
                 self.assertEqual((yield self.dut.submodules.core.regfile.regArray[expectedRegs[i][0]]),
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
     if args.vcd is True:
-        print(f"[INFO]: Emitting VCD files to --> {outputDir}\n")
+        print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
     if args.verbose is True:
         verboseProgram = True

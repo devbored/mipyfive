@@ -68,7 +68,7 @@ class TestLSU(unittest.TestCase):
     test_lw  = test_load(0x1234abcd, LSULoadCtrl.LSU_LW.value,  0x1234abcd)
     test_lbu = test_load(0x1234abcd, LSULoadCtrl.LSU_LBU.value, 0x000000cd)
     test_lhu = test_load(0x1234abcd, LSULoadCtrl.LSU_LHU.value, 0x0000abcd)
-    
+
     test_sb = test_store(0x1234abcd, LSUStoreCtrl.LSU_SB.value, 0x000000cd)
     test_sh = test_store(0x1234abcd, LSUStoreCtrl.LSU_SH.value, 0x0000abcd)
     test_sw = test_store(0x1234abcd, LSUStoreCtrl.LSU_SW.value, 0x1234abcd)
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
     if args.vcd is True:
-        print(f"[INFO]: Emitting VCD files to --> {outputDir}\n")
+        print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
-    
+
     unittest.main(verbosity=2)

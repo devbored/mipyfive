@@ -26,7 +26,7 @@ def test_ram_read():
                 testList.append(randVal)
             yield Tick()
 
-            # Test that reading from 
+            # Test that reading from
             for i in range(self.dut.memory.depth):
                 yield self.dut.readAddr.eq(i)
                 for j in range(2):
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
     if args.vcd is True:
-        print(f"[INFO]: Emitting VCD files to --> {outputDir}\n")
+        print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
-    
+
     unittest.main(verbosity=2)

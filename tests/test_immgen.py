@@ -56,7 +56,7 @@ if __name__ == "__main__":
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
     if args.vcd is True:
-        print(f"[INFO]: Emitting VCD files to --> {outputDir}\n")
+        print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
 
     unittest.main(verbosity=2)

@@ -16,7 +16,7 @@ def test_pipereg(values):
         global createVcd
         global outputDir
         sim = Simulator(self.dut)
-        
+
         # Begin test
         def process():
             for val in values:
@@ -35,7 +35,7 @@ def test_pipereg(values):
                 #for j in range(2):
                 #    yield Tick()
                 #self.assertEqual((yield self.dut.dout), 0)
-        
+
         sim.add_clock(1e-6)
         sim.add_sync_process(process)
         if createVcd:
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
     if args.vcd is True:
-        print(f"[INFO]: Emitting VCD files to --> {outputDir}\n")
+        print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
-    
+
     unittest.main(verbosity=2)
