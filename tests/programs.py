@@ -1,3 +1,4 @@
+from math import log
 import os
 import sys
 import random
@@ -5,7 +6,7 @@ import random
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mipyfive.types import *
 
-# --- Define test programs --------------------------------------------------------------------------------------------
+# --- Define unit test programs ----------------------------------------------------------------------------------------
 
 # Arithmetic test
 arithVal1           = random.randint(Imm32Ranges.I_MIN.value//2, Imm32Ranges.I_MAX.value//2)
@@ -72,6 +73,42 @@ arithTestProgram    = f'''
     bne   x13, x10, FAIL
     addi  x30, x30, 1
     jal   x29, STALL
+
+    FAIL:   add x0, x0, x0  ; NOP
+            add x31, x0, x30
+    STALL:  add x0, x0, x0  ; NOP
+            jal x0, STALL
+'''
+
+logicVal1           = random.randint(Imm32Ranges.I_MIN.value//2, Imm32Ranges.I_MAX.value//2)
+logicVal2           = random.randint(Imm32Ranges.I_MIN.value//2, Imm32Ranges.I_MAX.value//2)
+logicRs1            = logicVal1
+logicRs2            = logicVal2
+logicRs3            = logicVal1 & logicVal2
+logicRs4            = logicVal1 | logicVal2
+logicRs5            = logicVal1 ^ logicVal2
+logicTestProgram    =f'''
+    # --- Logic tests ---
+    andi  x6, x1, {logicVal2}
+    bne   x6, x3, FAIL
+    addi  x30, x30, 1
+    and   x6, x1, x2
+    bne   x6, x3, FAIL
+    addi  x30, x30, 1
+    ori   x6, x1, {logicVal2}
+    bne   x6, x4, FAIL
+    addi  x30, x30, 1
+    or    x6, x1, x2
+    bne   x6, x4, FAIL
+    addi  x30, x30, 1
+    xori  x6, x1, {logicVal2}
+    bne   x6, x5, FAIL
+    addi  x30, x30, 1
+    xor   x6, x1, x2
+    bne   x6, x5, FAIL
+    addi  x30, x30, 1
+    jal   x29, STALL
+
     FAIL:   add x0, x0, x0  ; NOP
             add x31, x0, x30
     STALL:  add x0, x0, x0  ; NOP

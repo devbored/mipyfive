@@ -97,13 +97,19 @@ class TestCore(unittest.TestCase):
             self.dut.submodules.core.MEM_valid.eq(1)
         ]
 
-    # Core tests - programs in "tests/programs.py"
+    # --- Core tests - programs in "tests/programs.py" ---
     arithTestInitRegfile = [
         (1,arithRs1), (2,arithRs2), (3,arithRs3), (4,arithRs4), (5,arithRs5), (6,arithRs6), (7,arithRs7),
             (8,arithRs8), (9,arithRs9), (10,arithRs10), (11,arithRs11), (12,arithRs12)
     ]
     arithTestExpectedRegfile = [(31, 0)]
     test_core_arith = test_core(arithTestProgram, arithTestInitRegfile, arithTestExpectedRegfile)
+
+    logicTestInitRegfile = [
+        (1,logicRs1), (2,logicRs2), (3, logicRs3), (4, logicRs4), (5, logicRs5)
+    ]
+    logicTestExpectedRegfile = [(31, 0)]
+    test_core_logic = test_core(logicTestProgram, logicTestInitRegfile, logicTestExpectedRegfile)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -100,8 +100,7 @@ class MipyfiveCore(Elaboratable):
             aluOut=self.dataWidth,
             writeData=self.dataWidth,
             rdAddr=self.regfile.addrBits,
-            imm=self.dataWidth,
-            pc=self.dataWidth
+            branchAddr=self.dataWidth
         )
         self.EX_MEM_lsuLoadCtrl         = self.EX_MEM.doutSlice("lsuLoadCtrl")
         self.EX_MEM_lsuStoreCtrl        = self.EX_MEM.doutSlice("lsuStoreCtrl")
@@ -113,8 +112,7 @@ class MipyfiveCore(Elaboratable):
         self.EX_MEM_aluOut              = self.EX_MEM.doutSlice("aluOut")
         self.EX_MEM_writeData           = self.EX_MEM.doutSlice("writeData")
         self.EX_MEM_rdAddr              = self.EX_MEM.doutSlice("rdAddr")
-        self.EX_MEM_imm                 = self.EX_MEM.doutSlice("imm")
-        self.EX_MEM_pc                  = self.EX_MEM.doutSlice("pc")
+        self.EX_MEM_branchAddr          = self.EX_MEM.doutSlice("branchAddr")
 
         self.MEM_WB = PipeReg(
             lsuLoadCtrl=ceilLog2(len(LSULoadCtrl)),
@@ -186,16 +184,20 @@ class MipyfiveCore(Elaboratable):
         prefetch    = Signal(32, reset=self.pcStart+4)
         PC          = Signal(32, reset=self.pcStart)
         pcNext      = Signal(32)
-        takeBranch = self.EX_MEM_branch & self.EX_MEM_aluOut[0]
+        takeBranch  = self.EX_MEM_branch & self.EX_MEM_aluOut[0]
 
         m.d.sync += prefetch.eq(pcNext)
         with m.If(~self.IF_valid):
             m.d.sync += PC.eq(PC)
-            m.d.comb += self.PCout.eq(PC)
         with m.Else():
             m.d.sync += PC.eq(prefetch)
-            m.d.comb += self.PCout.eq(prefetch)
 
+        with m.If(~self.IF_valid):
+            m.d.comb += self.PCout.eq(PC)
+        with m.Elif(takeBranch):
+            m.d.comb += self.PCout.eq(self.EX_MEM_branchAddr)
+        with m.Else():
+            m.d.comb += self.PCout.eq(prefetch)
 
         m.d.comb += [
             # Pipereg
@@ -209,7 +211,7 @@ class MipyfiveCore(Elaboratable):
             )
         ]
         with m.If(takeBranch):
-            m.d.comb += pcNext.eq(self.EX_MEM_pc + (self.EX_MEM_imm << 1))
+            m.d.comb += pcNext.eq(self.EX_MEM_branchAddr + 4)
         with m.Elif(self.control.jump):
             m.d.comb += pcNext.eq(self.IF_ID_pc + (self.immgen.imm << 1))
         with m.Elif(self.ID_EX_jumpR):
@@ -286,8 +288,7 @@ class MipyfiveCore(Elaboratable):
                     self.alu.out,
                     fwdAluBin,
                     self.ID_EX_rdAddr,
-                    self.ID_EX_imm,
-                    self.ID_EX_pc
+                    (self.ID_EX_pc + (self.ID_EX_imm << 1))
                 )
             ),
             # ALU

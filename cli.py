@@ -21,7 +21,7 @@ if __name__ == "__main__":
     #parser.add_argument("--enableF", action="store_true", help="Enable the Single-Precision Floating Point Extension")
     args, unknown = parser.parse_known_args()
 
-    if len(unknown) is not 0:
+    if len(unknown) != 0:
         print(f"[mipyfive - Error]: Unknown argument(s)/option(s):\n{unknown}\n")
         parser.print_help()
         exit(0)
