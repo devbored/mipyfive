@@ -14,9 +14,10 @@ from examples.common.ram import *
 
 class MipyfiveCore(Elaboratable):
     # TODO: Starting boot addr, extensions, etc. can be configured here
-    def __init__(self, dataWidth, regCount, pcStart, ISA):
+    def __init__(self, dataWidth, regCount, pcStart, ISA, bramRegfile=True):
         self.dataWidth      = dataWidth
         self.pcStart        = pcStart
+        self.bramRegfile    = bramRegfile
         self.addrBits       = ceilLog2(regCount)
         self.ISA            = ISA # TODO: Use later when extensions are added/supported
 
@@ -36,39 +37,47 @@ class MipyfiveCore(Elaboratable):
         self.immgen     = ImmGen() # TODO: Allow for arbitrary width?
         self.hazard     = HazardUnit(regCount)
         self.forward    = ForwardingUnit(regCount)
-        self.regfile    = RegFile(dataWidth, regCount)
-        #self.regfile    = RAM(width=dataWidth, depth=regCount)
+        self.regfile    = RegFile(dataWidth, regCount, bramRegfile=bramRegfile)
         self.control    = Controller()
 
-        # Create pipeline registers
-        self.IF_ID = PipeReg(
-            pc=self.dataWidth,
-            instr=self.dataWidth
-        )
+        # Configure and create pipeline registers
+        # --- IF_ID Pipeline reg ---
+        IF_ID_config = {
+            # Name          # Number of bits (i.e. bit-vector)
+            "pc"            : self.dataWidth,
+            "instr"         : self.dataWidth
+        }
+
+        self.IF_ID          = PipeReg(**IF_ID_config)
         self.IF_ID_pc       = self.IF_ID.doutSlice("pc")
         self.IF_ID_instr    = self.IF_ID.doutSlice("instr")
 
-        self.ID_EX = PipeReg(
-            aluOp=ceilLog2(len(AluOp)),
-            lsuLoadCtrl=ceilLog2(len(LSULoadCtrl)),
-            lsuStoreCtrl=ceilLog2(len(LSUStoreCtrl)),
-            regWrite=1,
-            memWrite=1,
-            memRead=1,
-            mem2Reg=1,
-            jump=1,
-            jumpR=1,
-            branch=1,
-            aluAsrc=ceilLog2(len(AluASrcCtrl)),
-            aluBsrc=ceilLog2(len(AluBSrcCtrl)),
-            rs1=dataWidth,
-            rs2=dataWidth,
-            rs1Addr=self.regfile.addrBits,
-            rs2Addr=self.regfile.addrBits,
-            rdAddr=self.regfile.addrBits,
-            imm=self.dataWidth,
-            pc=self.dataWidth,
-        )
+        # --- ID_EX Pipeline reg ---
+        ID_EX_config = {
+            # Name          # Number of bits (i.e. bit-vector)
+            "aluOp"         : ceilLog2(len(AluOp)),
+            "lsuLoadCtrl"   : ceilLog2(len(LSULoadCtrl)),
+            "lsuStoreCtrl"  : ceilLog2(len(LSUStoreCtrl)),
+            "regWrite"      : 1,
+            "memWrite"      : 1,
+            "memRead"       : 1,
+            "mem2Reg"       : 1,
+            "jump"          : 1,
+            "jumpR"         : 1,
+            "branch"        : 1,
+            "aluAsrc"       : ceilLog2(len(AluASrcCtrl)),
+            "aluBsrc"       : ceilLog2(len(AluBSrcCtrl)),
+            "rs1Addr"       : self.regfile.addrBits,
+            "rs2Addr"       : self.regfile.addrBits,
+            "rdAddr"        : self.regfile.addrBits,
+            "imm"           : self.dataWidth,
+            "pc"            : self.dataWidth
+        }
+        if not bramRegfile:
+            ID_EX_config['rs1']     = dataWidth
+            ID_EX_config['rs2']     = dataWidth
+
+        self.ID_EX                  = PipeReg(**ID_EX_config)
         self.ID_EX_aluOp            = self.ID_EX.doutSlice("aluOp")
         self.ID_EX_lsuLoadCtrl      = self.ID_EX.doutSlice("lsuLoadCtrl")
         self.ID_EX_lsuStoreCtrl     = self.ID_EX.doutSlice("lsuStoreCtrl")
@@ -81,28 +90,35 @@ class MipyfiveCore(Elaboratable):
         self.ID_EX_branch           = self.ID_EX.doutSlice("branch")
         self.ID_EX_aluAsrc          = self.ID_EX.doutSlice("aluAsrc")
         self.ID_EX_aluBsrc          = self.ID_EX.doutSlice("aluBsrc")
-        self.ID_EX_rs1              = self.ID_EX.doutSlice("rs1")
-        self.ID_EX_rs2              = self.ID_EX.doutSlice("rs2")
+        if bramRegfile:
+            self.ID_EX_rs1          = self.regfile.rs1Data
+            self.ID_EX_rs2          = self.regfile.rs2Data
+        else:
+            self.ID_EX_rs1          = self.ID_EX.doutSlice("rs1")
+            self.ID_EX_rs2          = self.ID_EX.doutSlice("rs2")
         self.ID_EX_rs1Addr          = self.ID_EX.doutSlice("rs1Addr")
         self.ID_EX_rs2Addr          = self.ID_EX.doutSlice("rs2Addr")
         self.ID_EX_rdAddr           = self.ID_EX.doutSlice("rdAddr")
         self.ID_EX_imm              = self.ID_EX.doutSlice("imm")
         self.ID_EX_pc               = self.ID_EX.doutSlice("pc")
 
-        self.EX_MEM = PipeReg(
-            lsuLoadCtrl=ceilLog2(len(LSULoadCtrl)),
-            lsuStoreCtrl=ceilLog2(len(LSUStoreCtrl)),
-            regWrite=1,
-            mem2Reg=1,
-            memWrite=1,
-            jump=1,
-            jumpR=1,
-            branch=1,
-            aluOut=self.dataWidth,
-            writeData=self.dataWidth,
-            rdAddr=self.regfile.addrBits,
-            branchAddr=self.dataWidth
-        )
+        # --- EX_MEM Pipeline reg ---
+        EX_MEM_config = {
+            # Name          # Number of bits (i.e. bit-vector)
+            "lsuLoadCtrl"   : ceilLog2(len(LSULoadCtrl)),
+            "lsuStoreCtrl"  : ceilLog2(len(LSUStoreCtrl)),
+            "regWrite"      : 1,
+            "mem2Reg"       : 1,
+            "memWrite"      : 1,
+            "jump"          : 1,
+            "jumpR"         : 1,
+            "branch"        : 1,
+            "aluOut"        : self.dataWidth,
+            "writeData"     : self.dataWidth,
+            "rdAddr"        : self.regfile.addrBits,
+            "branchAddr"    : self.dataWidth
+        }
+        self.EX_MEM                     = PipeReg(**EX_MEM_config)
         self.EX_MEM_lsuLoadCtrl         = self.EX_MEM.doutSlice("lsuLoadCtrl")
         self.EX_MEM_lsuStoreCtrl        = self.EX_MEM.doutSlice("lsuStoreCtrl")
         self.EX_MEM_regWrite            = self.EX_MEM.doutSlice("regWrite")
@@ -116,14 +132,17 @@ class MipyfiveCore(Elaboratable):
         self.EX_MEM_rdAddr              = self.EX_MEM.doutSlice("rdAddr")
         self.EX_MEM_branchAddr          = self.EX_MEM.doutSlice("branchAddr")
 
-        self.MEM_WB = PipeReg(
-            lsuLoadCtrl=ceilLog2(len(LSULoadCtrl)),
-            regWrite=1,
-            mem2Reg=1,
-            aluOut=self.dataWidth,
-            rdAddr=self.regfile.addrBits,
-            dataIn=self.dataWidth
-        )
+        # --- MEM_WB Pipeline reg ---
+        MEM_WB_config = {
+            # Name          # Number of bits (i.e. bit-vector)
+            "lsuLoadCtrl"   : ceilLog2(len(LSULoadCtrl)),
+            "regWrite"      : 1,
+            "mem2Reg"       : 1,
+            "aluOut"        : self.dataWidth,
+            "rdAddr"        : self.regfile.addrBits,
+            "dataIn"        : self.dataWidth
+        }
+        self.MEM_WB             = PipeReg(**MEM_WB_config)
         self.MEM_WB_lsuLoadCtrl = self.MEM_WB.doutSlice("lsuLoadCtrl")
         self.MEM_WB_regWrite    = self.MEM_WB.doutSlice("regWrite")
         self.MEM_WB_mem2Reg     = self.MEM_WB.doutSlice("mem2Reg")
@@ -191,17 +210,16 @@ class MipyfiveCore(Elaboratable):
         takeBranch          = self.ID_EX_branch & self.alu.out[0]
         invalidFetch        = ~self.IF_valid & ~lastValid
         flush_IF_ID         = self.hazard.IF_ID_flush | ~lastValid | invalidFetch
+        IF_ID_din           = Cat(
+            PC_last,
+            self.instruction
+        )
 
         m.d.comb += [
             # Pipereg
             self.IF_ID.rst.eq(flush_IF_ID),
             self.IF_ID.en.eq(~self.hazard.IF_ID_stall),
-            self.IF_ID.din.eq(
-                Cat(
-                    PC_last,
-                    self.instruction
-                )
-            ),
+            self.IF_ID.din.eq(IF_ID_din),
             # Jump Address calculation
             jumpAddrAdderOut.eq(
                 Mux(self.ID_EX_jumpR, self.ID_EX_imm, (self.ID_EX_imm << 1))
@@ -224,42 +242,45 @@ class MipyfiveCore(Elaboratable):
 
         # --- Decode --------------------------------------------------------------------------------------------------
 
-        rs1Addr = self.IF_ID_instr[15:20]
-        rs2Addr = self.IF_ID_instr[20:25]
-        rdAddr  = self.IF_ID_instr[7:12]
+        rs1Addr     = self.IF_ID_instr[15:20]
+        rs2Addr     = self.IF_ID_instr[20:25]
+        rdAddr      = self.IF_ID_instr[7:12]
+        ID_EX_din   = Cat(
+            self.control.aluOp,
+            self.control.lsuLoadCtrl,
+            self.control.lsuStoreCtrl,
+            self.control.regWrite,
+            self.control.memWrite,
+            self.control.memRead,
+            self.control.mem2Reg,
+            self.control.jump,
+            self.control.jumpR,
+            self.control.branch,
+            self.control.aluAsrc,
+            self.control.aluBsrc,
+            rs1Addr,
+            rs2Addr,
+            rdAddr,
+            self.immgen.imm,
+            self.IF_ID_pc
+        )
+        if not self.bramRegfile:
+            ID_EX_din = Cat(
+                ID_EX_din,
+                self.regfile.rs1Data,
+                self.regfile.rs2Data,
+            )
 
         m.d.comb += [
             # Pipereg
             self.ID_EX.rst.eq(self.hazard.ID_EX_flush),
             self.ID_EX.en.eq(~self.hazard.ID_EX_stall),
-            self.ID_EX.din.eq(
-                Cat(
-                    self.control.aluOp,
-                    self.control.lsuLoadCtrl,
-                    self.control.lsuStoreCtrl,
-                    self.control.regWrite,
-                    self.control.memWrite,
-                    self.control.memRead,
-                    self.control.mem2Reg,
-                    self.control.jump,
-                    self.control.jumpR,
-                    self.control.branch,
-                    self.control.aluAsrc,
-                    self.control.aluBsrc,
-                    self.regfile.rs1Data,
-                    self.regfile.rs2Data,
-                    rs1Addr,
-                    rs2Addr,
-                    rdAddr,
-                    self.immgen.imm,
-                    self.IF_ID_pc,
-                )
-            ),
+            self.ID_EX.din.eq(ID_EX_din),
             # Immgen
             self.immgen.instruction.eq(self.IF_ID_instr),
             # Control
             self.control.instruction.eq(self.IF_ID_instr),
-            # Regfile - TODO: Replace with BRAM
+            # Regfile
             self.regfile.rs1Addr.eq(self.IF_ID_instr[15:20]),
             self.regfile.rs2Addr.eq(self.IF_ID_instr[20:25]),
             self.regfile.writeData.eq(self.lsu.lDataOut),
@@ -273,26 +294,26 @@ class MipyfiveCore(Elaboratable):
 
         # --- Execute -------------------------------------------------------------------------------------------------
 
+        EX_MEM_din = Cat(
+            self.ID_EX_lsuLoadCtrl,
+            self.ID_EX_lsuStoreCtrl,
+            self.ID_EX_regWrite,
+            self.ID_EX_mem2Reg,
+            self.ID_EX_memWrite,
+            self.ID_EX_jump,
+            self.ID_EX_jumpR,
+            self.ID_EX_branch,
+            self.alu.out,
+            fwdAluBin,
+            self.ID_EX_rdAddr,
+            (self.ID_EX_pc + (self.ID_EX_imm << 1))
+        )
+
         m.d.comb += [
             # Pipereg
             self.EX_MEM.rst.eq(self.hazard.EX_MEM_flush),
             self.EX_MEM.en.eq(~self.hazard.EX_MEM_stall),
-            self.EX_MEM.din.eq(
-                Cat(
-                    self.ID_EX_lsuLoadCtrl,
-                    self.ID_EX_lsuStoreCtrl,
-                    self.ID_EX_regWrite,
-                    self.ID_EX_mem2Reg,
-                    self.ID_EX_memWrite,
-                    self.ID_EX_jump,
-                    self.ID_EX_jumpR,
-                    self.ID_EX_branch,
-                    self.alu.out,
-                    fwdAluBin,
-                    self.ID_EX_rdAddr,
-                    (self.ID_EX_pc + (self.ID_EX_imm << 1))
-                )
-            ),
+            self.EX_MEM.din.eq(EX_MEM_din),
             # ALU
             self.alu.in1.eq(aluAin),
             self.alu.in2.eq(aluBin),
@@ -341,20 +362,20 @@ class MipyfiveCore(Elaboratable):
 
         # --- Memory --------------------------------------------------------------------------------------------------
 
+        MEM_WB_din = Cat(
+            self.EX_MEM_lsuLoadCtrl,
+            self.EX_MEM_regWrite,
+            self.EX_MEM_mem2Reg,
+            self.EX_MEM_aluOut,
+            self.EX_MEM_rdAddr,
+            self.DataIn
+        )
+
         m.d.comb += [
             # Pipereg
             self.MEM_WB.rst.eq(0),
             self.MEM_WB.en.eq(~self.hazard.MEM_WB_stall),
-            self.MEM_WB.din.eq(
-                Cat(
-                    self.EX_MEM_lsuLoadCtrl,
-                    self.EX_MEM_regWrite,
-                    self.EX_MEM_mem2Reg,
-                    self.EX_MEM_aluOut,
-                    self.EX_MEM_rdAddr,
-                    self.DataIn
-                )
-            ),
+            self.MEM_WB.din.eq(MEM_WB_din),
             # LSU
             self.lsu.lDataIn.eq(mem2RegWire),
             self.lsu.lCtrlIn.eq(self.MEM_WB_lsuLoadCtrl),

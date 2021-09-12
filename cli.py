@@ -14,6 +14,8 @@ if __name__ == "__main__":
     parser.add_argument("-il", action="store_true", help="Emit design in RTLIL (Yosys) instead of Verilog.")
     parser.add_argument("--pcStart", dest="pcStart", default="0",
         help="PC start/reset value (Prefix value with '0x' for hex).")
+    parser.add_argument("--lutRegfile", action="store_true",
+        help="Opt to use LUT based implementation for regfile rather than BRAM")
     parser.add_argument("--buildCore", action="store_true", help="Build and output the main core")
     parser.add_argument("--buildSmol", action="store_true", help="Build and output the smol SoC example")
     # TODO: Uncomment when extensions are available
@@ -35,11 +37,15 @@ if __name__ == "__main__":
     }
     isaConfig = isas[isaString]
 
-    pcStart = 0
+    pcStart     = 0
+    bramRegfile = True
     if args.pcStart[:2] == "0x":
         pcStart = int(args.pcStart, 16)
     else:
         pcStart = int(args.pcStart)
+
+    if args.lutRegfile is True:
+        bramRegfile = False
 
     # Default generate type is Verilog - can be overriden to RTLIL (il)
     generateType = "v"
@@ -59,7 +65,13 @@ if __name__ == "__main__":
     if args.buildCore:
         rtlFile = os.path.join(outputDir, f"top.{generateType}")
         print(f"[mipyfive - Info]: Generating RTL to --> {rtlFile}")
-        m = MipyfiveCore(dataWidth=32, regCount=32, pcStart=pcStart, ISA=isaConfig)
+        m = MipyfiveCore(
+            dataWidth       = 32,
+            regCount        = 32,
+            pcStart         = pcStart,
+            ISA             = isaConfig,
+            bramRegfile     = bramRegfile
+        )
         # Override sys.argv for nMigen main
         nmigenMainArgs = [
             "generate",
