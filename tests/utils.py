@@ -18,7 +18,7 @@ def asm2binI(instr, rd, rs1, imm):
     tk = Toolkit()
     bitstring = tk.I_type(instr, rs1, imm, rd)
 
-    # Bug in generated srai instruction generated - this is a quick workaround
+    # NOTE: Bug in generated srai instruction generated - this is a quick workaround
     if instr == "srai":
         return int(bitstring, 2) | 0x40000000
 
@@ -33,7 +33,9 @@ def asm2binS(instr, rs2, imm, rs1):
 def asm2binB(instr, rs2, imm, rs1):
     ''' Simple wrapper around riscv_assembler.utils B/SB-type assembler to convert bitstring --> raw int'''
     tk = Toolkit()
-    bitstring = tk.SB_type(instr, rs1, rs2, imm)
+
+    # NOTE: Possible bug? Flip operand order when using this SB_type method
+    bitstring = tk.SB_type(instr, rs2, rs1, imm)
     return int(bitstring, 2)
 
 def asm2binU(instr, rd, imm):

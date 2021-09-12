@@ -115,7 +115,6 @@ logicTestProgram    = f'''
             jal x0, STALL
 '''
 
-# TODO: Fix this test...
 jumpTestProgram    = f'''
     # --- Jump/Branch tests ---
     add x0, x0, x0              ; NOP
@@ -124,7 +123,7 @@ jumpTestProgram    = f'''
     add x0, x0, x0
     jal x0, FAIL
     L0: addi x30, x30, 1
-    jalr x0, x30, 2
+    jalr x0, x0, 32             ; Jump to: (8th instruction * 4) + 0 = 32
     jal x0, FAIL
     addi  x30, x30, 1
     beq x0, x0, L1

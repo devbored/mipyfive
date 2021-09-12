@@ -215,7 +215,7 @@ class MipyfiveCore(Elaboratable):
             lastValid.eq(self.IF_valid),
             PC_last.eq(PC)
         ]
-        with m.If(takeBranch | self.ID_EX_jump | self.ID_EX_jumpR):
+        with m.If((takeBranch | self.ID_EX_jump | self.ID_EX_jumpR) & ~flush_IF_ID):
             m.d.sync += PC.eq(jumpAddrAdderOut)
         with m.Elif(invalidFetch):
             m.d.sync += PC.eq(PC_last)
