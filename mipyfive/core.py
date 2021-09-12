@@ -115,8 +115,7 @@ class MipyfiveCore(Elaboratable):
             "branch"        : 1,
             "aluOut"        : self.dataWidth,
             "writeData"     : self.dataWidth,
-            "rdAddr"        : self.regfile.addrBits,
-            "branchAddr"    : self.dataWidth
+            "rdAddr"        : self.regfile.addrBits
         }
         self.EX_MEM                     = PipeReg(**EX_MEM_config)
         self.EX_MEM_lsuLoadCtrl         = self.EX_MEM.doutSlice("lsuLoadCtrl")
@@ -130,7 +129,6 @@ class MipyfiveCore(Elaboratable):
         self.EX_MEM_aluOut              = self.EX_MEM.doutSlice("aluOut")
         self.EX_MEM_writeData           = self.EX_MEM.doutSlice("writeData")
         self.EX_MEM_rdAddr              = self.EX_MEM.doutSlice("rdAddr")
-        self.EX_MEM_branchAddr          = self.EX_MEM.doutSlice("branchAddr")
 
         # --- MEM_WB Pipeline reg ---
         MEM_WB_config = {
@@ -305,8 +303,7 @@ class MipyfiveCore(Elaboratable):
             self.ID_EX_branch,
             self.alu.out,
             fwdAluBin,
-            self.ID_EX_rdAddr,
-            (self.ID_EX_pc + (self.ID_EX_imm << 1))
+            self.ID_EX_rdAddr
         )
 
         m.d.comb += [
