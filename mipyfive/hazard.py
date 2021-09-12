@@ -55,7 +55,7 @@ class HazardUnit(Elaboratable):
                 self.MEM_WB_stall.eq(0),
                 self.IF_ID_flush.eq(1),
                 self.ID_EX_flush.eq(1),
-                self.EX_MEM_flush.eq(0)
+                self.EX_MEM_flush.eq(1)
             ]
         with m.Elif(loadStall):
             m.d.comb += [

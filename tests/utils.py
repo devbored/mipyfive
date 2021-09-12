@@ -54,7 +54,7 @@ def asm2Bin(instructions, verbose=False):
     '''Convert RV32I asm program str to binary list\n
     (Operand order follows same arg orders as asm2bin<RISBUJ> util functions)
     '''
-    instrList = textwrap.dedent(instructions).split(os.linesep)
+    instrList = textwrap.dedent(instructions).splitlines()
 
     tk = Toolkit()
     srcLine = 0
@@ -95,6 +95,7 @@ def asm2Bin(instructions, verbose=False):
         processedInstrList.append(instr)
 
     # Main ASM loop
+    addrCounter = 0
     for instr in processedInstrList:
         mnemonic = instr[:instr.find(' ')]
         operands = instr[instr.find(' '):].replace(' ', '').split(',')
@@ -125,11 +126,15 @@ def asm2Bin(instructions, verbose=False):
 
         if verbose is True:
             if len(operands) == 3:
-                print(f"Instr: {mnemonic} {operands[0]}, {operands[1]}, {operands[2]}", end='')
-                print(f" --> {hex(binaryList[len(binaryList)-1])}")
+                print(f"{str(hex(addrCounter)).rjust(10,' ')} |", end='')
+                print(f" {mnemonic} {operands[0]}, {operands[1]}, {operands[2]}".ljust(40,' '), end='')
+                print(f" | {hex(binaryList[len(binaryList)-1])}".ljust(16,' '))
             else:
-                print(f"Instr: {mnemonic} {operands[0]}, {operands[1]} --> {hex(binaryList[len(binaryList)-1])}")
+                print(f"{str(hex(addrCounter)).rjust(10,' ')} |", end='')
+                print(f" {mnemonic} {operands[0]}, {operands[1]}".ljust(40,' '), end='')
+                print(f" | {hex(binaryList[len(binaryList)-1])}".ljust(16,' '))
 
-        srcLine += 1
+        srcLine     += 1
+        addrCounter += 4
 
     return binaryList

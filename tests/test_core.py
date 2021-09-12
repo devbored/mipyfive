@@ -111,6 +111,10 @@ class TestCore(unittest.TestCase):
     logicTestExpectedRegfile = [(31, 0)]
     test_core_logic = test_core(logicTestProgram, logicTestInitRegfile, logicTestExpectedRegfile)
 
+    jumpTestInitRegfile = []
+    logicTestExpectedRegfile = [(31, 0)]
+    test_core_jump = test_core(jumpTestProgram, jumpTestInitRegfile, logicTestExpectedRegfile)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--vcd", action="store_true", help="Emit VCD files.")

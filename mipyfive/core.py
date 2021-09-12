@@ -95,6 +95,7 @@ class MipyfiveCore(Elaboratable):
             regWrite=1,
             mem2Reg=1,
             memWrite=1,
+            jump=1,
             jumpR=1,
             branch=1,
             aluOut=self.dataWidth,
@@ -107,6 +108,7 @@ class MipyfiveCore(Elaboratable):
         self.EX_MEM_regWrite            = self.EX_MEM.doutSlice("regWrite")
         self.EX_MEM_mem2Reg             = self.EX_MEM.doutSlice("mem2Reg")
         self.EX_MEM_memWrite            = self.EX_MEM.doutSlice("memWrite")
+        self.EX_MEM_jump                = self.EX_MEM.doutSlice("jump")
         self.EX_MEM_jumpR               = self.EX_MEM.doutSlice("jumpR")
         self.EX_MEM_branch              = self.EX_MEM.doutSlice("branch")
         self.EX_MEM_aluOut              = self.EX_MEM.doutSlice("aluOut")
@@ -157,7 +159,7 @@ class MipyfiveCore(Elaboratable):
         # Hazard and Forwarding setup/logic
         m.d.comb += [
             # Hazard
-            self.hazard.Jump.eq(self.ID_EX_jump | self.EX_MEM_jumpR),
+            self.hazard.Jump.eq(self.EX_MEM_jump | self.EX_MEM_jumpR),
             self.hazard.Branch.eq(self.EX_MEM_branch),
             self.hazard.BranchMispredict.eq(self.EX_MEM_aluOut[0]),
             self.hazard.IF_valid.eq(self.IF_valid),
@@ -181,45 +183,44 @@ class MipyfiveCore(Elaboratable):
 
         # --- Fetch ---------------------------------------------------------------------------------------------------
 
-        prefetch    = Signal(32, reset=self.pcStart+4)
-        PC          = Signal(32, reset=self.pcStart)
-        pcNext      = Signal(32)
-        takeBranch  = self.EX_MEM_branch & self.EX_MEM_aluOut[0]
+        PC                  = Signal(32, reset=self.pcStart)
+        PC_last             = Signal(32, reset=self.pcStart)
+        jumpAddrAdderOut    = Signal(32)
+        lastValid           = Signal()
 
-        m.d.sync += prefetch.eq(pcNext)
-        with m.If(~self.IF_valid):
-            m.d.sync += PC.eq(PC)
-        with m.Else():
-            m.d.sync += PC.eq(prefetch)
-
-        with m.If(~self.IF_valid):
-            m.d.comb += self.PCout.eq(PC)
-        with m.Elif(takeBranch):
-            m.d.comb += self.PCout.eq(self.EX_MEM_branchAddr)
-        with m.Else():
-            m.d.comb += self.PCout.eq(prefetch)
+        takeBranch          = self.ID_EX_branch & self.alu.out[0]
+        invalidFetch        = ~self.IF_valid & ~lastValid
+        flush_IF_ID         = self.hazard.IF_ID_flush | ~lastValid | invalidFetch
 
         m.d.comb += [
             # Pipereg
-            self.IF_ID.rst.eq(self.hazard.IF_ID_flush),
+            self.IF_ID.rst.eq(flush_IF_ID),
             self.IF_ID.en.eq(~self.hazard.IF_ID_stall),
             self.IF_ID.din.eq(
                 Cat(
-                    PC,
+                    PC_last,
                     self.instruction
                 )
-            )
+            ),
+            # Jump Address calculation
+            jumpAddrAdderOut.eq(
+                Mux(self.ID_EX_jumpR, self.ID_EX_imm, (self.ID_EX_imm << 1))
+                +
+                Mux(self.ID_EX_jumpR, fwdAluAin, self.ID_EX_pc)
+            ),
+            self.PCout.eq(PC)
         ]
-        with m.If(takeBranch):
-            m.d.comb += pcNext.eq(self.EX_MEM_branchAddr + 4)
-        with m.Elif(self.control.jump):
-            m.d.comb += pcNext.eq(self.IF_ID_pc + (self.immgen.imm << 1))
-        with m.Elif(self.ID_EX_jumpR):
-            m.d.comb += pcNext.eq(self.ID_EX_pc + (fwdAluAin << 1))
-        with m.Elif(~self.IF_valid):
-            m.d.comb += pcNext.eq(prefetch)
+
+        m.d.sync += [
+            lastValid.eq(self.IF_valid),
+            PC_last.eq(PC)
+        ]
+        with m.If(takeBranch | self.ID_EX_jump | self.ID_EX_jumpR):
+            m.d.sync += PC.eq(jumpAddrAdderOut)
+        with m.Elif(invalidFetch):
+            m.d.sync += PC.eq(PC_last)
         with m.Else():
-            m.d.comb += pcNext.eq(prefetch + 4)
+            m.d.sync += PC.eq(PC + 4)
 
         # --- Decode --------------------------------------------------------------------------------------------------
 
@@ -283,6 +284,7 @@ class MipyfiveCore(Elaboratable):
                     self.ID_EX_regWrite,
                     self.ID_EX_mem2Reg,
                     self.ID_EX_memWrite,
+                    self.ID_EX_jump,
                     self.ID_EX_jumpR,
                     self.ID_EX_branch,
                     self.alu.out,

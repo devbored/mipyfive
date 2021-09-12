@@ -87,7 +87,7 @@ logicRs2            = logicVal2
 logicRs3            = logicVal1 & logicVal2
 logicRs4            = logicVal1 | logicVal2
 logicRs5            = logicVal1 ^ logicVal2
-logicTestProgram    =f'''
+logicTestProgram    = f'''
     # --- Logic tests ---
     andi  x6, x1, {logicVal2}
     bne   x6, x3, FAIL
@@ -115,4 +115,40 @@ logicTestProgram    =f'''
             jal x0, STALL
 '''
 
-# TODO: Add more tests...
+# TODO: Fix this test...
+jumpTestProgram    = f'''
+    # --- Jump/Branch tests ---
+    add x0, x0, x0              ; NOP
+    addi  x30, x30, 1
+    jal x0, L0
+    add x0, x0, x0
+    jal x0, FAIL
+    L0: addi x30, x30, 1
+    jalr x0, x30, 2
+    jal x0, FAIL
+    addi  x30, x30, 1
+    beq x0, x0, L1
+    jal x0, FAIL
+    L1: addi x30, x30, 1
+    bne x0, x30, L2
+    jal x0, FAIL
+    L2: addi x30, x30, 1
+    blt x0, x30, L3
+    jal x0, FAIL
+    L3: addi x30, x30, 1
+    bge x30, x0, L4
+    jal x0, FAIL
+    L4: addi x30, x30, 1
+    bltu x0, x30, L5
+    jal x0, FAIL
+    L5: addi x30, x30, 1
+    bgeu x30, x0, L6
+    jal x0, FAIL
+    L6: addi x30, x30, 1
+    jal x0, STALL
+
+    FAIL:   add x0, x0, x0      ; NOP
+            add x31, x0, x30
+    STALL:  add x0, x0, x0      ; NOP
+            jal x0, STALL
+'''
