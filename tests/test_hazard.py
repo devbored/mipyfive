@@ -64,7 +64,7 @@ class TestHazard(unittest.TestCase):
     test_jump_flush_hazard = test_hazard(
         Jump=1, Branch=0, BranchMispredict=0, IF_valid=1, MEM_valid=1, IF_ID_rs1=0, IF_ID_rs2=0, ID_EX_memRead=0,
             ID_EX_rd=0, IF_stall=0, IF_ID_stall=0, ID_EX_stall=0, EX_MEM_stall=0, MEM_WB_stall=0, IF_ID_flush=1,
-                ID_EX_flush=1, EX_MEM_flush=0
+                ID_EX_flush=1, EX_MEM_flush=1
     )
     test_load_stall_hazard = test_hazard(
         Jump=0, Branch=0, BranchMispredict=0, IF_valid=1, MEM_valid=1, IF_ID_rs1=5, IF_ID_rs2=0, ID_EX_memRead=1,
@@ -90,10 +90,11 @@ class TestHazard(unittest.TestCase):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--vcd", action="store_true", help="Emit VCD files.")
+    parser.add_argument("-v", dest="verbosity", type=int, default=2, help="Verbosity level.")
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
     if args.vcd is True:
         print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
 
-    unittest.main(verbosity=2)
+    unittest.main(verbosity=args.verbosity)

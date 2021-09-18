@@ -76,10 +76,11 @@ class TestLSU(unittest.TestCase):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--vcd", action="store_true", help="Emit VCD files.")
+    parser.add_argument("-v", dest="verbosity", type=int, default=2, help="Verbosity level.")
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
     if args.vcd is True:
         print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
 
-    unittest.main(verbosity=2)
+    unittest.main(verbosity=args.verbosity)

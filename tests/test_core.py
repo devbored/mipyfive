@@ -130,14 +130,15 @@ class TestCore(unittest.TestCase):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--vcd", action="store_true", help="Emit VCD files.")
-    parser.add_argument("--verbose", action="store_true", help="Print out RISC-V asm and machine code.")
+    parser.add_argument("--dump", action="store_true", help="Dump out RISC-V asm and machine code.")
     parser.add_argument("--bram", action="store_true", help="Test using BRAM implementation.")
+    parser.add_argument("-v", dest="verbosity", type=int, default=2, help="Verbosity level.")
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
     if args.vcd is True:
         print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
-    if args.verbose is True:
+    if args.dump is True:
         verboseProgram = True
     if args.bram is True:
         print(f"[mipyfive - Info]: Testing using BRAM implementation for regfile.")
@@ -145,4 +146,4 @@ if __name__ == "__main__":
     else:
         print(f"[mipyfive - Info]: Testing using LUT implementation for regfile.")
 
-    unittest.main(verbosity=2)
+    unittest.main(verbosity=args.verbosity)

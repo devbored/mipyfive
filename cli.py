@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 import argparse
 
 from nmigen import *
@@ -18,10 +19,15 @@ if __name__ == "__main__":
         help="Opt to use LUT based implementation for regfile rather than BRAM")
     parser.add_argument("--buildCore", action="store_true", help="Build and output the main core")
     parser.add_argument("--buildSmol", action="store_true", help="Build and output the smol SoC example")
+    parser.add_argument("--runTests", "-t", action="store_true", help="Run the unit tests and exit")
     # TODO: Uncomment when extensions are available
     #parser.add_argument("--enableM", action="store_true", help="Enable the Multiply/Divide Extension")
     #parser.add_argument("--enableF", action="store_true", help="Enable the Single-Precision Floating Point Extension")
     args, unknown = parser.parse_known_args()
+
+    if not len(sys.argv) > 1:
+        parser.print_help()
+        exit(0)
 
     if len(unknown) != 0:
         print(f"[mipyfive - Error]: Unknown argument(s)/option(s):\n{unknown}\n")
@@ -57,14 +63,39 @@ if __name__ == "__main__":
     if not os.path.exists(outputDir):
         os.makedirs(outputDir)
 
-    if not any([args.buildCore, args.buildSmol]):
-        print("[mipyfive - Info]: No build target given - defaulting to [--buildCore].")
-        args.buildCore = True
+    # A convienence test-runner to go over all tests
+    if args.runTests:
+        testDir     = os.path.abspath(os.path.join(os.path.dirname(__file__), "tests"))
+        tests       = glob.glob(f"{testDir}/test_*.py")
+        testNames   = [os.path.splitext(os.path.basename(x))[0] for x in tests]
+        testDict    = {testNames[x]: tests[x] for x in range(len(testNames))}
+
+        testCount = 0
+        failedTests = []
+        print("[mipyfive - Info]: Running unit tests...")
+        for testName, testPath in testDict.items():
+            print(f"\n[ {testName} ]")
+            ret = os.system(f"{sys.executable} {testPath} -v 0")
+            if ret != 0:
+                failedTests.append(testName)
+            testCount += 1
+
+        # Results
+        print()
+        print("=" * 120)
+        print(f"Summary:")
+        print("=" * 120)
+        print(f"PASSED: {testCount - len(failedTests)}")
+        print(f"FAILED: {len(failedTests)}")
+        if failedTests is not None:
+            print(f"\nFailed tests:\n{failedTests}")
+        print("=" * 120)
+        print()
 
     # Generate core RTL
     if args.buildCore:
         rtlFile = os.path.join(outputDir, f"top.{generateType}")
-        print(f"[mipyfive - Info]: Generating RTL to --> {rtlFile}")
+        print(f"[mipyfive - Info]: Generating mipyfive core RTL to --> {rtlFile}")
         m = MipyfiveCore(
             dataWidth       = 32,
             regCount        = 32,
@@ -94,7 +125,7 @@ if __name__ == "__main__":
     # Example SoC(s)
     if args.buildSmol:
         rtlFile = os.path.join(outputDir, f"smol.{generateType}")
-        print(f"[mipyfive - Info]: Generating RTL to --> {rtlFile}")
+        print(f"[mipyfive - Info]: Generating smol SoC RTL to --> {rtlFile}")
         m = smol()
         # Override sys.argv for nMigen main
         nmigenMainArgs = [
