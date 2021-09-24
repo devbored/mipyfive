@@ -1,7 +1,7 @@
 # mipyfive
 Another RISC-V core - implemented via [nMigen](https://github.com/m-labs/nmigen)
 
-*Work in Progress*
+🚧 *Work in Progress* 🚧
 
 ## Design
 - Implements RV32I
@@ -9,17 +9,15 @@ Another RISC-V core - implemented via [nMigen](https://github.com/m-labs/nmigen)
 - Static branch prediction (assume not-taken)
 
 ## Main Checklist Items:
-:heavy_check_mark: Design the main RISC-V RV32I Core
+✅ Design the main RISC-V RV32I Core
 
-:heavy_check_mark: Unit Testing (via nMigen)
+✅ Unit Testing (via nMigen)
 
 :x: Validate the main RISC-V RV32I Core (RISC-V Conformance Testing)
 
-:x: Design basic SoC-creation utility
+:x: Create/Finish initial documentation
 
-:x: Finish initial documentation
-
-## Supplemental Checklist Items
+## Extra Checklist Items
 :x: Provide optional modules (i.e. Vectored Interrupt Controller, Interconnect Bus, Debug HW, etc.)
 
 :x: Explore/Add RISC-V Extensions

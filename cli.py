@@ -15,8 +15,6 @@ if __name__ == "__main__":
     parser.add_argument("-il", action="store_true", help="Emit design in RTLIL (Yosys) instead of Verilog.")
     parser.add_argument("--pcStart", dest="pcStart", default="0",
         help="PC start/reset value (Prefix value with '0x' for hex).")
-    parser.add_argument("--lutRegfile", action="store_true",
-        help="Opt to use LUT based implementation for regfile rather than BRAM")
     parser.add_argument("--buildCore", action="store_true", help="Build and output the main core")
     parser.add_argument("--buildSmol", action="store_true", help="Build and output the smol SoC example")
     parser.add_argument("--runTests", "-t", action="store_true", help="Run the unit tests and exit")
@@ -44,24 +42,15 @@ if __name__ == "__main__":
     isaConfig = isas[isaString]
 
     pcStart     = 0
-    bramRegfile = True
     if args.pcStart[:2] == "0x":
         pcStart = int(args.pcStart, 16)
     else:
         pcStart = int(args.pcStart)
 
-    if args.lutRegfile is True:
-        bramRegfile = False
-
     # Default generate type is Verilog - can be overriden to RTLIL (il)
     generateType = "v"
     if args.il is True:
         generateType = "il"
-
-    # Ensure output dir exists
-    outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "out"))
-    if not os.path.exists(outputDir):
-        os.makedirs(outputDir)
 
     # A convienence test-runner to go over all tests
     if args.runTests:
@@ -94,14 +83,18 @@ if __name__ == "__main__":
 
     # Generate core RTL
     if args.buildCore:
+        # Ensure output dir exists
+        outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "out"))
+        if not os.path.exists(outputDir):
+            os.makedirs(outputDir)
+
         rtlFile = os.path.join(outputDir, f"top.{generateType}")
         print(f"[mipyfive - Info]: Generating mipyfive core RTL to --> {rtlFile}")
         m = MipyfiveCore(
             dataWidth       = 32,
             regCount        = 32,
             pcStart         = pcStart,
-            ISA             = isaConfig,
-            bramRegfile     = bramRegfile
+            ISA             = isaConfig
         )
         # Override sys.argv for nMigen main
         nmigenMainArgs = [
@@ -122,8 +115,13 @@ if __name__ == "__main__":
         ])
         print("[mipyfive - Info]: Done.")
 
-    # Example SoC(s)
+    # Example SoC
     if args.buildSmol:
+        # Ensure output dir exists
+        outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "out"))
+        if not os.path.exists(outputDir):
+            os.makedirs(outputDir)
+
         rtlFile = os.path.join(outputDir, f"smol.{generateType}")
         print(f"[mipyfive - Info]: Generating smol SoC RTL to --> {rtlFile}")
         m = smol()

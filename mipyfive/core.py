@@ -14,10 +14,9 @@ from examples.common.ram import *
 
 class MipyfiveCore(Elaboratable):
     # TODO: Starting boot addr, extensions, etc. can be configured here
-    def __init__(self, dataWidth, regCount, pcStart, ISA, bramRegfile=True):
+    def __init__(self, dataWidth, regCount, pcStart, ISA):
         self.dataWidth      = dataWidth
         self.pcStart        = pcStart
-        self.bramRegfile    = bramRegfile
         self.addrBits       = ceilLog2(regCount)
         self.ISA            = ISA # TODO: Use later when extensions are added/supported
 
@@ -37,7 +36,7 @@ class MipyfiveCore(Elaboratable):
         self.immgen     = ImmGen() # TODO: Allow for arbitrary width?
         self.hazard     = HazardUnit(regCount)
         self.forward    = ForwardingUnit(regCount)
-        self.regfile    = RegFile(dataWidth, regCount, bramRegfile=bramRegfile)
+        self.regfile    = RegFile(dataWidth, regCount)
         self.control    = Controller()
 
         # Configure and create pipeline registers
@@ -73,9 +72,6 @@ class MipyfiveCore(Elaboratable):
             "imm"           : self.dataWidth,
             "pc"            : self.dataWidth
         }
-        if not bramRegfile:
-            ID_EX_config['rs1']     = dataWidth
-            ID_EX_config['rs2']     = dataWidth
 
         self.ID_EX                  = PipeReg(**ID_EX_config)
         self.ID_EX_aluOp            = self.ID_EX.doutSlice("aluOp")
@@ -90,12 +86,8 @@ class MipyfiveCore(Elaboratable):
         self.ID_EX_branch           = self.ID_EX.doutSlice("branch")
         self.ID_EX_aluAsrc          = self.ID_EX.doutSlice("aluAsrc")
         self.ID_EX_aluBsrc          = self.ID_EX.doutSlice("aluBsrc")
-        if bramRegfile:
-            self.ID_EX_rs1          = self.regfile.rs1Data
-            self.ID_EX_rs2          = self.regfile.rs2Data
-        else:
-            self.ID_EX_rs1          = self.ID_EX.doutSlice("rs1")
-            self.ID_EX_rs2          = self.ID_EX.doutSlice("rs2")
+        self.ID_EX_rs1              = self.regfile.rs1Data
+        self.ID_EX_rs2              = self.regfile.rs2Data
         self.ID_EX_rs1Addr          = self.ID_EX.doutSlice("rs1Addr")
         self.ID_EX_rs2Addr          = self.ID_EX.doutSlice("rs2Addr")
         self.ID_EX_rdAddr           = self.ID_EX.doutSlice("rdAddr")
@@ -262,12 +254,6 @@ class MipyfiveCore(Elaboratable):
             self.immgen.imm,
             self.IF_ID_pc
         )
-        if not self.bramRegfile:
-            ID_EX_din = Cat(
-                ID_EX_din,
-                self.regfile.rs1Data,
-                self.regfile.rs2Data,
-            )
 
         m.d.comb += [
             # Pipereg
@@ -281,13 +267,13 @@ class MipyfiveCore(Elaboratable):
             # Regfile
             self.regfile.rs1Addr.eq(self.IF_ID_instr[15:20]),
             self.regfile.rs2Addr.eq(self.IF_ID_instr[20:25]),
-            self.regfile.writeData.eq(self.lsu.lDataOut),
-            self.regfile.writeAddr.eq(self.MEM_WB_rdAddr)
+            self.regfile.rdData.eq(self.lsu.lDataOut),
+            self.regfile.rdAddr.eq(self.MEM_WB_rdAddr),
         ]
         with m.If(self.MEM_WB_rdAddr != 0):
-            m.d.comb += self.regfile.writeEnable.eq(self.MEM_WB_regWrite)
+            m.d.comb += self.regfile.we.eq(self.MEM_WB_regWrite)
         with m.Else():
-            m.d.comb += self.regfile.writeEnable.eq(0)
+            m.d.comb += self.regfile.we.eq(0)
 
 
         # --- Execute -------------------------------------------------------------------------------------------------

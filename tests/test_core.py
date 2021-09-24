@@ -15,7 +15,6 @@ from examples.common.ram import *
 
 createVcd      = False
 verboseProgram = False
-useBRAM        = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
 def test_core(program, initRegs=[], expectedRegs=[]):
     def test(self):
@@ -42,10 +41,7 @@ def test_core(program, initRegs=[], expectedRegs=[]):
                     raise ValueError(f'[mipyfive - test_core]: "{initRegs[i]}" at index "{i}" needs to be a tuple.')
                 if len(initRegs[i]) < 2:
                     raise ValueError('[mipyfive - test_core]: initReg tuple needs 2 elements (regIndex, value).')
-                if self.dut.submodules.core.bramRegfile:
-                    yield self.dut.submodules.core.regfile.dualPortBram.memory[initRegs[i][0]].eq(initRegs[i][1])
-                else:
-                    yield self.dut.submodules.core.regfile.regArray[initRegs[i][0]].eq(initRegs[i][1])
+                yield self.dut.submodules.core.regfile.memory[initRegs[i][0]].eq(initRegs[i][1])
 
             # Let the clock run for a bit
             for i in range(len(programBinary) * 2):
@@ -62,14 +58,10 @@ def test_core(program, initRegs=[], expectedRegs=[]):
                     raise ValueError(f'[mipyfive - test_core]: "{expectedRegs[i]}" at index "{i}" needs to be a tuple.')
                 if len(expectedRegs[i]) < 2:
                     raise ValueError('[mipyfive - test_core]: expectedRegs tuple needs 2 elements (regIndex, value).')
-                if self.dut.submodules.core.bramRegfile:
-                    self.assertEqual(
-                        (yield self.dut.submodules.core.regfile.dualPortBram.memory[expectedRegs[i][0]]),
-                            expectedRegs[i][1]
-                    )
-                else:
-                    self.assertEqual((yield self.dut.submodules.core.regfile.regArray[expectedRegs[i][0]]),
-                        expectedRegs[i][1])
+                self.assertEqual(
+                    (yield self.dut.submodules.core.regfile.memory[expectedRegs[i][0]]),
+                        expectedRegs[i][1]
+                )
 
         sim.add_clock(1e-6)
         sim.add_sync_process(process)
@@ -87,7 +79,7 @@ class TestCore(unittest.TestCase):
     def setUp(self):
         self.dut  = Module()
         self.dut.submodules.core = MipyfiveCore(
-            dataWidth=32, regCount=32, pcStart=0, ISA=CoreISAconfigs.RV32I.value, bramRegfile=useBRAM
+            dataWidth=32, regCount=32, pcStart=0, ISA=CoreISAconfigs.RV32I.value
         )
         self.dut.submodules.imem = RAM(width=32, depth=512, wordAligned=True)
         self.dut.submodules.dmem = RAM(width=32, depth=512)
@@ -131,7 +123,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--vcd", action="store_true", help="Emit VCD files.")
     parser.add_argument("--dump", action="store_true", help="Dump out RISC-V asm and machine code.")
-    parser.add_argument("--bram", action="store_true", help="Test using BRAM implementation.")
     parser.add_argument("-v", dest="verbosity", type=int, default=2, help="Verbosity level.")
     args, argv = parser.parse_known_args()
     sys.argv[1:] = argv
@@ -140,10 +131,5 @@ if __name__ == "__main__":
         createVcd = True
     if args.dump is True:
         verboseProgram = True
-    if args.bram is True:
-        print(f"[mipyfive - Info]: Testing using BRAM implementation for regfile.")
-        useBRAM = True
-    else:
-        print(f"[mipyfive - Info]: Testing using LUT implementation for regfile.")
 
     unittest.main(verbosity=args.verbosity)

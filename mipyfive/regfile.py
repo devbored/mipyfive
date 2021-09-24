@@ -1,48 +1,36 @@
 from nmigen import *
 from .utils import *
-from examples.common.ram import *
 
 class RegFile(Elaboratable):
-    def __init__(self, width, regCount, bramRegfile=False):
-        self.addrBits       = ceilLog2(regCount)
-        self.bramRegfile    = bramRegfile
-        self.rs1Data        = Signal(width)
-        self.rs2Data        = Signal(width)
-        self.writeData      = Signal(width)
-        self.writeEnable    = Signal()
-        self.rs1Addr        = Signal(self.addrBits)
-        self.rs2Addr        = Signal(self.addrBits)
-        self.writeAddr      = Signal(self.addrBits)
+    def __init__(self, width, regCount):
+        self.addrBits   = ceilLog2(regCount)
+        self.we         = Signal()
+        self.rs1Addr    = Signal(self.addrBits)
+        self.rs1Data    = Signal(width)
+        self.rs2Addr    = Signal(self.addrBits)
+        self.rs2Data    = Signal(width)
+        self.rdAddr     = Signal(self.addrBits)
+        self.rdData     = Signal(width)
 
-         # TODO: Still generates using LUTs - need to look into this...
-        if bramRegfile:
-            self.dualPortBram   = RAM(width=width, depth=regCount, wordAligned=False, dualPort=True)
-        else:
-            # Implement regfile using LUTs instead
-            self.regArray       = Memory(width=width, depth=regCount)
+        self.memory     = Memory(width=width, depth=regCount)
+        self.rs1        = self.memory.read_port()
+        self.rs2        = self.memory.read_port()
+        self.rd         = self.memory.write_port()
 
     def elaborate(self, platform):
         m = Module()
 
-        if self.bramRegfile:
-            m.submodules.dualPortBram = self.dualPortBram
-            m.d.comb += [
-                self.dualPortBram.readAddr.eq(self.rs1Addr),
-                self.dualPortBram.readAddr2.eq(self.rs2Addr),
-                self.dualPortBram.writeAddr.eq(self.writeAddr),
-                self.dualPortBram.writeData.eq(self.writeData),
-                self.dualPortBram.writeEnable.eq(self.writeEnable),
-
-                self.rs1Data.eq(self.dualPortBram.readData),
-                self.rs2Data.eq(self.dualPortBram.readData2),
-            ]
-            pass
-        else:
-            m.d.comb += [
-                self.rs1Data.eq(self.regArray[self.rs1Addr]),
-                self.rs2Data.eq(self.regArray[self.rs2Addr])
-            ]
-            with m.If(self.writeEnable):
-                m.d.sync += self.regArray[self.writeAddr].eq(self.writeData)
+        m.submodules.rs1 = self.rs1
+        m.submodules.rs2 = self.rs2
+        m.submodules.rd  = self.rd
+        m.d.comb += [
+            self.rs1.addr.eq(self.rs1Addr),
+            self.rs1Data.eq(self.rs1.data),
+            self.rs2.addr.eq(self.rs2Addr),
+            self.rs2Data.eq(self.rs2.data),
+            self.rd.addr.eq(self.rdAddr),
+            self.rd.data.eq(self.rdData),
+            self.rd.en.eq(self.we)
+        ]
 
         return m
