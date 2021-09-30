@@ -102,8 +102,8 @@ class TestAlu(unittest.TestCase):
     def setUp(self):
         self.dut = ALU(width=32)
 
-    int1 = 5#random.randint(0, 2147483647)
-    int2 = 5#random.randint(0, 2147483647)
+    int1 = random.randint(0, 2147483647)
+    int2 = random.randint(0, 2147483647)
     test_alu_add        = test_runner(int1, int2, AluOp.ADD)
     test_alu_sub        = test_runner(int1, int2, AluOp.SUB)
     test_alu_and        = test_runner(int1, int2, AluOp.AND)
