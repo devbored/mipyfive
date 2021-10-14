@@ -15,8 +15,8 @@ if __name__ == "__main__":
     parser.add_argument("-il", action="store_true", help="Emit design in RTLIL (Yosys) instead of Verilog.")
     parser.add_argument("--pcStart", dest="pcStart", default="0",
         help="PC start/reset value (Prefix value with '0x' for hex).")
-    parser.add_argument("--buildCore", action="store_true", help="Build and output the main core")
-    parser.add_argument("--buildSmol", action="store_true", help="Build and output the smol SoC example")
+    parser.add_argument("--buildCore", "-bc", action="store_true", help="Build and output the main core")
+    parser.add_argument("--buildSmol", "-bs", action="store_true", help="Build and output the smol SoC example")
     parser.add_argument("--runTests", "-t", action="store_true", help="Run the unit tests and exit")
     # TODO: Uncomment when extensions are available
     #parser.add_argument("--enableM", action="store_true", help="Enable the Multiply/Divide Extension")
@@ -71,14 +71,14 @@ if __name__ == "__main__":
 
         # Results
         print()
-        print("=" * 120)
+        print("=" * 70)
         print(f"Summary:")
-        print("=" * 120)
+        print("=" * 70)
         print(f"PASSED: {testCount - len(failedTests)}")
         print(f"FAILED: {len(failedTests)}")
-        if failedTests is not None:
+        if len(failedTests) > 0:
             print(f"\nFailed tests:\n{failedTests}")
-        print("=" * 120)
+        print("=" * 70)
         print()
 
     # Generate core RTL

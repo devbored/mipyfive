@@ -18,9 +18,11 @@ def asm2binI(instr, rd, rs1, imm):
     tk = Toolkit()
     bitstring = tk.I_type(instr, rs1, imm, rd)
 
-    # NOTE: Bug in generated srai instruction generated - this is a quick workaround
+    # NOTE: Bug in generated srai and slri instruction(s) - this is a quick workaround
     if instr == "srai":
-        return int(bitstring, 2) | 0x40000000
+        return int(bitstring, 2) | (1 << 30)
+    if instr == "slri":
+        return int(bitstring, 2) & (~(1 << 30))
 
     return int(bitstring, 2)
 
