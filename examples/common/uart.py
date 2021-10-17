@@ -5,6 +5,7 @@ import argparse
 import unittest
 
 from nmigen import *
+from nmigen.cli import main
 from nmigen.back.pysim import *
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
@@ -38,14 +39,19 @@ class UART(Elaboratable):
 
         # Define shift regs
         shiftSize = (1 + self.dataBits + 1)
-        self.rxShift = self.txShift = Signal(shiftSize)
+        self.rxShift = Signal(shiftSize)
+        self.txShift = Signal(shiftSize)
         # Define data regs
-        self.rxReg = self.txReg = Signal(self.dataBits)
+        self.rxReg = Signal(self.dataBits)
+        self.txReg = Signal(self.dataBits)
 
         # Create a modulus counter for clk dividing, a sample counter, and a counter for bit progress
-        rxSampleTickCounter = txSampleTickCounter = Signal(ceilLog2(self.baudSampleRate))
-        rxSampleCounter = txSampleCounter = Signal(ceilLog2(15))
-        rxBitCounter = txBitCounter = Signal(ceilLog2(shiftSize))
+        rxSampleTickCounter = Signal(ceilLog2(self.baudSampleRate))
+        txSampleTickCounter = Signal(ceilLog2(self.baudSampleRate))
+        rxSampleCounter     = Signal(ceilLog2(15))
+        txSampleCounter     = Signal(ceilLog2(15))
+        rxBitCounter        = Signal(ceilLog2(shiftSize))
+        txBitCounter        = Signal(ceilLog2(shiftSize))
 
         m.d.comb += self.tx_o.eq(self.txShift[0])
 
@@ -188,8 +194,46 @@ class UART(Elaboratable):
 createVcd = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "out", "vcd"))
 def test_tx_uart(packet):
-    # TODO: Add TX test...
-    pass
+    def test(self):
+        print(f"Sending packet: [ {chr(packet)} ]")
+        sim = Simulator(self.dut)
+        def process():
+            # Idle
+            yield self.dut.rx_i.eq(1)
+            yield self.dut.tx_start_i.eq(0)
+            yield self.dut.txReg.eq(packet)
+            yield Delay(5e-6)
+            # Start bit
+            yield self.dut.tx_start_i.eq(1)
+            for j in range((self.dut.baudSampleRate+1) * 8):
+                yield Tick()
+            # Data bits
+            yield self.dut.tx_start_i.eq(0)
+            for i in range(self.dut.dataBits):
+                for j in range((self.dut.baudSampleRate+1) * 8):
+                    yield Tick()
+                print(f"Actual: {(yield self.dut.tx_o)}, Expected: {(packet & (1 << i)) >> i}")
+                self.assertEqual((yield self.dut.tx_o), (packet & (1 << i)) >> i)
+                for j in range((self.dut.baudSampleRate+1) * 8):
+                    yield Tick()
+            for i in range((self.dut.baudSampleRate+1) * 8):
+                yield Tick()
+            # Stop bit
+            yield self.dut.rx_i.eq(1)
+            for j in range((self.dut.baudSampleRate+1) * 64):
+                yield Tick()
+
+        sim.add_clock(1e-6)
+        sim.add_process(process)
+        if createVcd:
+            if not os.path.exists(outputDir):
+                os.makedirs(outputDir)
+            with sim.write_vcd(vcd_file=os.path.join(outputDir, f"{self._testMethodName}.vcd")):
+                sim.run()
+        else:
+            sim.run()
+    return test
+
 def test_rx_uart(packet):
     def test(self):
         print(f"Receiving packet: [ {chr(packet)} ]")
@@ -218,6 +262,7 @@ def test_rx_uart(packet):
                 yield Tick()
 
             # Check if packet matches
+            print(f"Actual: {(yield self.dut.rxReg)}, Expected: {packet}")
             self.assertEqual((yield self.dut.rxReg), packet)
 
         sim.add_clock(1e-6)
@@ -225,7 +270,7 @@ def test_rx_uart(packet):
         if createVcd:
             if not os.path.exists(outputDir):
                 os.makedirs(outputDir)
-            with sim.write_vcd(vcd_file=os.path.join(outputDir, "test_uart.vcd")):
+            with sim.write_vcd(vcd_file=os.path.join(outputDir, f"{self._testMethodName}.vcd")):
                 sim.run()
         else:
             sim.run()
@@ -237,7 +282,8 @@ class TestUart(unittest.TestCase):
         self.dut = UART(clkFreq=10e6, targetBaudrate=115200, dataBits=8)
 
     # Unit tests
-    test_uart = test_rx_uart(ord(random.choice(string.ascii_letters).lower()))
+    test_rx_uart = test_rx_uart(ord(random.choice(string.ascii_letters)))
+    test_tx_uart = test_tx_uart(ord(random.choice(string.ascii_letters)))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -248,5 +294,4 @@ if __name__ == "__main__":
     if args.vcd is True:
         print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
-
     unittest.main(verbosity=args.verbosity)
