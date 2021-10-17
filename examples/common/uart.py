@@ -5,13 +5,14 @@ import argparse
 import unittest
 
 from nmigen import *
+from nmigen.cli import main
 from nmigen.back.pysim import *
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from mipyfive.pipereg import *
 from mipyfive.utils import *
 
-# A basic UART transciever module (start--data_bits--stop) - no parity bits
+# A basic UART transceiver module (start--data_bits--stop) - no parity bits
 class UART(Elaboratable):
     def __init__(self, clkFreq=1e6, targetBaudrate=9600, dataBits=8):
         self.clkFreq = clkFreq
@@ -27,11 +28,15 @@ class UART(Elaboratable):
             )
             self.baudSampleRate = 1
 
-        self.tx_o           = Signal()
+        self.tx_reg_i       = Signal(self.dataBits)
+        self.tx_reg_wr_i    = Signal()
         self.tx_start_i     = Signal()
+        self.tx_o           = Signal()
         self.tx_valid_o     = Signal()
+
         self.rx_i           = Signal()
         self.rx_ready_o     = Signal()
+        self.rx_reg_o       = Signal(self.dataBits)
 
     def elaborate(self, platform):
         m = Module()
@@ -40,9 +45,6 @@ class UART(Elaboratable):
         shiftSize = (1 + self.dataBits + 1)
         self.rxShift = Signal(shiftSize)
         self.txShift = Signal(shiftSize)
-        # Define data regs
-        self.rxReg = Signal(self.dataBits)
-        self.txReg = Signal(self.dataBits)
 
         # Create a modulus counter for clk dividing, a sample counter, and a counter for bit progress
         rxSampleTickCounter = Signal(ceilLog2(self.baudSampleRate))
@@ -52,7 +54,13 @@ class UART(Elaboratable):
         rxBitCounter        = Signal(ceilLog2(shiftSize))
         txBitCounter        = Signal(ceilLog2(shiftSize))
 
+        txReg = Signal(self.dataBits)
         m.d.comb += self.tx_o.eq(self.txShift[0])
+        with m.If(self.tx_reg_wr_i):
+            m.d.sync += txReg.eq(self.tx_reg_i)
+        with m.Else():
+            m.d.sync += txReg.eq(txReg)
+
 
         # ===================================================================================
         # RX FSM
@@ -65,7 +73,7 @@ class UART(Elaboratable):
                         rxSampleTickCounter.eq(self.baudSampleRate),
                         rxSampleCounter.eq(7)
                     ]
-                m.d.sync += [self.rx_ready_o.eq(0), self.rxReg.eq(self.rxShift[1:shiftSize-1])]
+                m.d.sync += [self.rx_ready_o.eq(0), self.rx_reg_o.eq(self.rxShift[1:shiftSize-1])]
 
             with m.State("RX_START"):
                 with m.If(rxSampleTickCounter == 0):
@@ -129,7 +137,7 @@ class UART(Elaboratable):
                     m.d.sync += [
                         self.tx_valid_o.eq(1),
                         txSampleCounter.eq(7),
-                        self.txShift.eq(Cat(0, self.txReg, 1)),
+                        self.txShift.eq(Cat(0, txReg, 1)),
                         txSampleTickCounter.eq(self.baudSampleRate)
                     ]
 
@@ -178,7 +186,6 @@ class UART(Elaboratable):
                         m.d.sync += [
                             self.tx_valid_o.eq(0),
                             self.txShift.eq(Cat(self.txShift[1:], 1)),
-                            self.txReg.eq(self.txShift[1:shiftSize-1]),
                             txSampleTickCounter.eq(self.baudSampleRate)
                         ]
                     with m.Else():
@@ -200,10 +207,12 @@ def test_tx_uart(packet):
             # Idle
             yield self.dut.rx_i.eq(1)
             yield self.dut.tx_start_i.eq(0)
-            yield self.dut.txReg.eq(packet)
+            yield self.dut.tx_reg_i.eq(packet)
+            yield self.dut.tx_reg_wr_i.eq(1)
             yield Delay(5e-6)
             # Start bit
             yield self.dut.tx_start_i.eq(1)
+            yield self.dut.tx_reg_wr_i.eq(0)
             for j in range((self.dut.baudSampleRate+1) * 8):
                 yield Tick()
             # Data bits
@@ -261,8 +270,8 @@ def test_rx_uart(packet):
                 yield Tick()
 
             # Check if packet matches
-            print(f"Actual: {(yield self.dut.rxReg)}, Expected: {packet}")
-            self.assertEqual((yield self.dut.rxReg), packet)
+            print(f"Actual: {(yield self.dut.rx_reg_o)}, Expected: {packet}")
+            self.assertEqual((yield self.dut.rx_reg_o), packet)
 
         sim.add_clock(1e-6)
         sim.add_process(process)
