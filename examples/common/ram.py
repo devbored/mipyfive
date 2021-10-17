@@ -1,8 +1,7 @@
 from nmigen import *
 from mipyfive.utils import *
 
-# RAM used for simulation purposes at the moment
-# TODO: Redo this as BRAM (i.e. read_port(), write_port(), etc.)
+# A basic BRAM module
 class RAM(Elaboratable):
     def __init__(self, width, depth, init=None, wordAligned=False):
         addrBits            = ceilLog2(depth)
@@ -14,15 +13,30 @@ class RAM(Elaboratable):
         self.writeAddr      = Signal(addrBits)
         self.memory         = Memory(width=width, depth=depth, init=init)
 
+        self.readPort       = self.memory.read_port()
+        self.writePort      = self.memory.write_port()
+
     def elaborate(self, platform):
         m = Module()
 
-        with m.If(self.writeEnable):
-            m.d.sync += self.memory[self.writeAddr].eq(self.writeData)
+        m.submodules.readPort   = self.readPort
+        m.submodules.writePort  = self.writePort
 
         if self.wordAligned:
-            m.d.sync += self.readData.eq(self.memory[self.readAddr[2:]])
+            m.d.comb += [
+                self.readPort.addr.eq(self.readAddr[2:]),
+                self.readData.eq(self.readPort.data),
+                self.writePort.addr.eq(self.writeAddr),
+                self.writePort.data.eq(self.writeData),
+                self.writePort.en.eq(self.writeEnable)
+            ]
         else:
-            m.d.sync += self.readData.eq(self.memory[self.readAddr])
+            m.d.comb += [
+                self.readPort.addr.eq(self.readAddr),
+                self.readData.eq(self.readPort.data),
+                self.writePort.addr.eq(self.writeAddr),
+                self.writePort.data.eq(self.writeData),
+                self.writePort.en.eq(self.writeEnable)
+            ]
 
         return m
