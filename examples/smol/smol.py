@@ -178,7 +178,7 @@ class Smol(Elaboratable):
             # MIOC
             self.mioc.dataWeIn.eq(self.core.DataWE),
             self.mioc.dataAddrIn.eq(self.core.DataAddr),
-            self.mioc.dataImemIn.eq(self.imem.readData),
+            self.mioc.dataImemIn.eq(self.imem.readData2),
             self.mioc.dataDmemIn.eq(self.dmem.readData),
             self.mioc.dataUartIn.eq(self.uart.dataOut),
             self.mioc.dataSseg0In.eq(self.sseg0.dataOut),

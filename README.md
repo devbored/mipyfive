@@ -26,6 +26,7 @@ Another RISC-V core - implemented via [nMigen](https://github.com/m-labs/nmigen)
 ❌ Explore/Add RISC-V Extensions in the future (mainly multiply/divide and fp32)
 
 ## Dependencies
+- Python 3.7 (or newer)
 - Yosys 0.9 (or newer)
     - Windows and Ubuntu 👉 http://www.clifford.at/yosys/download.html
     - macOS 👉 https://formulae.brew.sh/formula/yosys
@@ -45,6 +46,7 @@ To generate the example `smol` SoC:
 ```Bash
 python3 ./cli.py --buildSmol
 ```
+Readme for smol is 👉 [here](./examples/smol)
 
 Both cases generate Verilog code of the designs; there is also a `-il` option that
 outputs as Yosys `RTLIL` instead.
