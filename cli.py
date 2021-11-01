@@ -13,14 +13,11 @@ if __name__ == "__main__":
     # Define args/opts
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument("-il", action="store_true", help="Emit design in RTLIL (Yosys) instead of Verilog.")
-    parser.add_argument("--pcStart", dest="pcStart", default="0",
+    parser.add_argument("--pcStart", "-pc", dest="pcStart", default="0",
         help="PC start/reset value (Prefix value with '0x' for hex).")
     parser.add_argument("--buildCore", "-bc", action="store_true", help="Build and output the main core")
     parser.add_argument("--buildSmol", "-bs", action="store_true", help="Build and output the smol SoC example")
     parser.add_argument("--runTests", "-t", action="store_true", help="Run the unit tests and exit")
-    # TODO: Uncomment when extensions are available
-    #parser.add_argument("--enableM", action="store_true", help="Enable the Multiply/Divide Extension")
-    #parser.add_argument("--enableF", action="store_true", help="Enable the Single-Precision Floating Point Extension")
     args, unknown = parser.parse_known_args()
 
     if not len(sys.argv) > 1:
@@ -88,7 +85,7 @@ if __name__ == "__main__":
         if not os.path.exists(outputDir):
             os.makedirs(outputDir)
 
-        rtlFile = os.path.join(outputDir, f"top.{generateType}")
+        rtlFile = os.path.join(outputDir, f"mipyfive_core.{generateType}")
         print(f"[mipyfive - Info]: Generating mipyfive core RTL to --> {rtlFile}")
         m = MipyfiveCore(
             dataWidth       = 32,
@@ -124,7 +121,32 @@ if __name__ == "__main__":
 
         rtlFile = os.path.join(outputDir, f"smol.{generateType}")
         print(f"[mipyfive - Info]: Generating smol SoC RTL to --> {rtlFile}")
-        m = smol()
+
+        config = SmolConfig(
+            # Core
+            core_isa                = isaConfig,
+            core_data_width         = 32,
+            core_reg_count          = 32,
+            core_pc_start           = pcStart,
+            # UART controller
+            uart_addr_width         = 32,
+            uart_data_width         = 32,
+            uart_config             = UartConfig(
+                clk_frequency           = 10e6,
+                target_baudrate         = 115200,
+                data_bits               = 8,
+            ),
+            # SSEG Digit-0
+            sseg0_is_common_anode   = False,
+            sseg0_data_width        = 32,
+            # SSEG Digit-1
+            sseg1_is_common_anode   = False,
+            sseg1_data_width        = 32
+        )
+        print(f"ISA IDs: {isas}")
+        print(f"\nConfiguration:\n{config}\n")
+        m = Smol(config=config)
+
         # Override sys.argv for nMigen main
         nmigenMainArgs = [
             "generate",
@@ -134,8 +156,10 @@ if __name__ == "__main__":
         sys.argv[1:] = nmigenMainArgs
         main(m, ports=[
             # Input(s)
-            m.btn,
+            m.uart_tx,
             # Output(s)
-            m.ssegLEDs
+            m.uart_rx,
+            m.sseg0_out,
+            m.sseg1_out
         ])
         print("[mipyfive - Info]: Done.")

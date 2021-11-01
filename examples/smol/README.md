@@ -1,18 +1,27 @@
 # smol
-A small example SoC with an RV32I mipyfive core.
+A small example SoC with an mipyfive (RV32I) soft-core.
 
 🚧 *Work in Progress* 🚧
+- Still need to simulate/test for correct functionality
 
 ## Features
-- An RV32I mipyfive core
+- Embedded mipyfive (RV32I) soft-core
 - Harvard architecture
     - Separate instruction (IMEM) and data (DMEM) memories
-- A basic dmem and UART module connected to a peripheral-bus and control unit (PBCU)
-- A UART transceiver (RX/TX)
-    - Adjustable baud rate and data packet width
-    - No parity bits
+    - IMEM is dual-ported read so that instruction fetch and data read from IMEM can happen simultaneously
+- MMIO, DMEM, and IMEM are connected to a Memory/IO-bus and controller (MIOC)
+- Peripherals:
+    - A UART transceiver (RX/TX)
+        - Adjustable baud rate and data packet width (adjusted at build-time, **not** run-time adjustable)
+        - No parity bits
+    - A basic 2-digit seven-segment driver module
 
 ## Memory map 🗺️
-| Address Range            | Description                             |
-| ------------------------ | --------------------------------------- |
- ...
+| Address Range             | Description                             |
+| ------------------------- | --------------------------------------- |
+| 0x00000000 ... 0x00000FFF | Internal IMEM (BRAM) - 4KB (read-only)  |
+| 0x00001000 ... 0x000017FF | Internal DMEM (BRAM) - 2KB              |
+| 0x00003000 ... 0x0000300B | UART transceiver                        |
+| 0x00003010 ... 0x00003013 | Seven-segment display digit 0           |
+| 0x00003020 ... 0x00003023 | Seven-segment display digit 1           |
+

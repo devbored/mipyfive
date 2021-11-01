@@ -12,37 +12,58 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 from mipyfive.pipereg import *
 from mipyfive.utils import *
 
-# A basic UART transceiver module (start--data_bits--stop) - no parity bits
-class UART(Elaboratable):
-    def __init__(self, clkFreq=1e6, targetBaudrate=9600, dataBits=8):
-        self.clkFreq = clkFreq
-        self.targetBaudrate = targetBaudrate
-        self.dataBits = dataBits
+from enum import Enum
+from dataclasses import dataclass
 
-        assert targetBaudrate > 0 and clkFreq > 0 and dataBits > 0
-        self.baudSampleRate = int((clkFreq // ( 16 * targetBaudrate)))
+@dataclass
+class UartConfig:
+    clk_frequency           : float = 1e6
+    target_baudrate         : int   = 9600
+    data_bits               : int   = 8
+
+class UartControllerBits(Enum):
+    # Status bits
+    TX_BUSY     = 0
+    RX_READY    = 1
+    # Control (ctrl) bits
+    TX_START    = 0
+    TX_REG_WE   = 1
+
+# A basic UART transceiver module (start -- data_bits -- stop) - no parity bits
+class UART(Elaboratable):
+    def __init__(self, config:UartConfig):
+        if type(config) is not UartConfig:
+            raise ValueError(
+                "[mipyfive - uart.py]: " +
+                f"Incorrect config object type [ { type(config)} ] for Smol - expected [ {type(UartConfig)} ]"
+            )
+        self.config         = config
+
+        assert config.target_baudrate > 0 and config.clk_frequency > 0 and config.data_bits > 0
+        self.baudSampleRate = int((config.clk_frequency // ( 16 * config.target_baudrate)))
         if self.baudSampleRate == 0:
             print(
-                f"[UART - Warning]: Sampling rate of ({clkFreq / ( 16 * targetBaudrate)}) will be rounded to 1, " +
-                f"this might not be enough resolution for {clkFreq} Hz and {targetBaudrate} Baud."
+                f"[UART - Warning]: Sampling rate of ({config.clk_frequency / ( 16 * config.target_baudrate)}) " +
+                 "will be rounded to 1, " +
+                f"this might not be enough resolution for {config.clk_frequency} Hz and {config.target_baudrate} Baud."
             )
             self.baudSampleRate = 1
 
-        self.tx_reg_i       = Signal(self.dataBits)
-        self.tx_reg_wr_i    = Signal()
+        self.tx_reg_i       = Signal(self.config.data_bits)
+        self.tx_reg_we_i    = Signal()
         self.tx_start_i     = Signal()
         self.tx_o           = Signal()
-        self.tx_valid_o     = Signal()
+        self.tx_busy_o      = Signal()
 
         self.rx_i           = Signal()
         self.rx_ready_o     = Signal()
-        self.rx_reg_o       = Signal(self.dataBits)
+        self.rx_reg_o       = Signal(self.config.data_bits)
 
     def elaborate(self, platform):
         m = Module()
 
         # Define shift regs
-        shiftSize = (1 + self.dataBits + 1)
+        shiftSize = (1 + self.config.data_bits + 1)
         self.rxShift = Signal(shiftSize)
         self.txShift = Signal(shiftSize)
 
@@ -54,9 +75,9 @@ class UART(Elaboratable):
         rxBitCounter        = Signal(ceilLog2(shiftSize))
         txBitCounter        = Signal(ceilLog2(shiftSize))
 
-        txReg = Signal(self.dataBits)
+        txReg = Signal(self.config.data_bits)
         m.d.comb += self.tx_o.eq(self.txShift[0])
-        with m.If(self.tx_reg_wr_i):
+        with m.If(self.tx_reg_we_i):
             m.d.sync += txReg.eq(self.tx_reg_i)
         with m.Else():
             m.d.sync += txReg.eq(txReg)
@@ -82,7 +103,7 @@ class UART(Elaboratable):
                         m.next = "RX_DATA"
                         m.d.sync += [
                             rxSampleCounter.eq(15),
-                            rxBitCounter.eq(self.dataBits),
+                            rxBitCounter.eq(self.config.data_bits),
                             self.rxShift.eq(Cat(self.rxShift[1:], self.rx_i)),
                             rxSampleTickCounter.eq(self.baudSampleRate),
                         ]
@@ -135,7 +156,7 @@ class UART(Elaboratable):
                 with m.If(self.tx_start_i):
                     m.next = "TX_START"
                     m.d.sync += [
-                        self.tx_valid_o.eq(1),
+                        self.tx_busy_o.eq(1),
                         txSampleCounter.eq(7),
                         self.txShift.eq(Cat(0, txReg, 1)),
                         txSampleTickCounter.eq(self.baudSampleRate)
@@ -148,7 +169,7 @@ class UART(Elaboratable):
                         m.next = "TX_DATA"
                         m.d.sync += [
                             txSampleCounter.eq(15),
-                            txBitCounter.eq(self.dataBits),
+                            txBitCounter.eq(self.config.data_bits),
                             self.txShift.eq(Cat(self.txShift[1:], 1)),
                             txSampleTickCounter.eq(self.baudSampleRate),
                         ]
@@ -184,7 +205,7 @@ class UART(Elaboratable):
                     with m.If(txSampleCounter == 0):
                         m.next = "TX_IDLE"
                         m.d.sync += [
-                            self.tx_valid_o.eq(0),
+                            self.tx_busy_o.eq(0),
                             self.txShift.eq(Cat(self.txShift[1:], 1)),
                             txSampleTickCounter.eq(self.baudSampleRate)
                         ]
@@ -195,8 +216,98 @@ class UART(Elaboratable):
 
         return m
 
+# Module that wraps around the UART module - adds memory-mapped regs for interaction
+# TODO: Test this in simulation later
+class UARTcontroller(Elaboratable):
+    def __init__(self, addrWidth=32, dataWidth=32, config:UartConfig=None):
+        if type(config) is not UartConfig:
+            raise ValueError(
+                "[mipyfive - uart.py]: " +
+                f"Incorrect config object type [ { type(config)} ] for Smol - expected [ {type(UartConfig)} ]"
+            )
+        self.config         = config
+        self.dataWidth      = dataWidth
+        self.addrWidth      = addrWidth
+
+        self.writeEnable    = Signal()
+        self.addrIn         = Signal(addrWidth)
+        self.dataIn         = Signal(dataWidth)
+        self.dataOut        = Signal(dataWidth)
+        self.tx             = Signal()
+        self.rx             = Signal()
+
+        # UART submodule
+        self.uart           = UART(config=config)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        # Peripheral regs
+        rxReg       = Signal(self.dataWidth)    # READ-ONLY reg
+        txReg       = Signal(self.dataWidth)
+        statusReg   = Signal(self.dataWidth)    # READ-ONLY reg
+        ctrlReg     = Signal(self.dataWidth)
+
+        m.submodules.uart = self.uart
+        m.d.comb += [
+            self.uart.rx_i.eq(self.rx),
+            self.uart.tx_start_i.eq(ctrlReg[UartControllerBits.TX_START.value]),
+            self.uart.tx_reg_we_i.eq(ctrlReg[UartControllerBits.TX_REG_WE.value]),
+            self.uart.tx_reg_i.eq(txReg)
+        ]
+        # UART output assignments
+        m.d.sync += [
+            statusReg.eq(
+                Cat(
+                    self.uart.tx_busy_o, self.uart.rx_ready_o,
+                    Repl(C(0), (self.dataWidth-2))
+                )
+            )
+        ]
+
+        m.d.comb += self.tx.eq(self.uart.tx_o)
+
+        # Address decode logic
+        rxSel       = ~self.addrIn[4] & ~self.addrIn[3]
+        txSel       = ~self.addrIn[4] &  self.addrIn[3]
+        statusSel   =  self.addrIn[4] & ~self.addrIn[3]
+        ctrlSel     =  self.addrIn[4] &  self.addrIn[3]
+
+        # Read-logic
+        with m.If(rxSel):
+            m.d.comb += self.dataOut.eq(rxReg)
+        with m.Elif(txSel):
+            m.d.comb += self.dataOut.eq(txReg)
+        with m.Elif(statusSel):
+            m.d.comb += self.dataOut.eq(statusReg)
+        with m.Elif(ctrlSel):
+            m.d.comb += self.dataOut.eq(ctrlReg)
+        with m.Else():
+            m.d.comb += self.dataOut.eq(rxReg)
+
+        # Write-logic
+        with m.If(self.writeEnable):
+            with m.If(txSel):
+                m.d.sync += txReg.eq(self.dataIn)
+            with m.Elif(ctrlSel):
+                m.d.sync += ctrlReg.eq(self.dataIn)
+            with m.Else():
+                m.d.sync += [
+                    txReg.eq(txReg),
+                    ctrlReg.eq(ctrlReg),
+                ]
+        with m.Else():
+            # Current control reg bits are one-shot, so clear them if they are not being written to
+            m.d.sync += ctrlReg.eq(0)
+
+        # Update the RX reg if its ready
+        with m.If(statusReg[UartControllerBits.RX_READY.value]):
+            m.d.sync += rxReg.eq(self.uart.rx_reg_o)
+
+        return m
+
 # --- Simulation ------------------------------------------------------------------------------------------------------
-# UART unit test code
+# Unit test main UART module
 createVcd = False
 outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "out", "vcd"))
 def test_tx_uart(packet):
@@ -208,16 +319,16 @@ def test_tx_uart(packet):
             yield self.dut.rx_i.eq(1)
             yield self.dut.tx_start_i.eq(0)
             yield self.dut.tx_reg_i.eq(packet)
-            yield self.dut.tx_reg_wr_i.eq(1)
+            yield self.dut.tx_reg_we_i.eq(1)
             yield Delay(5e-6)
             # Start bit
             yield self.dut.tx_start_i.eq(1)
-            yield self.dut.tx_reg_wr_i.eq(0)
+            yield self.dut.tx_reg_we_i.eq(0)
             for j in range((self.dut.baudSampleRate+1) * 8):
                 yield Tick()
             # Data bits
             yield self.dut.tx_start_i.eq(0)
-            for i in range(self.dut.dataBits):
+            for i in range(self.dut.config.data_bits):
                 for j in range((self.dut.baudSampleRate+1) * 8):
                     yield Tick()
                 print(f"Actual: {(yield self.dut.tx_o)}, Expected: {(packet & (1 << i)) >> i}")
@@ -256,7 +367,7 @@ def test_rx_uart(packet):
             for j in range((self.dut.baudSampleRate+1) * 8):
                 yield Tick()
             # Data bits
-            for i in range(self.dut.dataBits):
+            for i in range(self.dut.config.data_bits):
                 for j in range((self.dut.baudSampleRate+1) * 8):
                     yield Tick()
                 yield self.dut.rx_i.eq((packet & (1 << i)) >> i)
@@ -287,7 +398,12 @@ def test_rx_uart(packet):
 # Define unit tests
 class TestUart(unittest.TestCase):
     def setUp(self):
-        self.dut = UART(clkFreq=10e6, targetBaudrate=115200, dataBits=8)
+        config = UartConfig(
+            clk_frequency=10e6,
+            target_baudrate=115200,
+            data_bits=8
+        )
+        self.dut = UART(config=config)
 
     # Unit tests
     test_rx_uart = test_rx_uart(ord(random.choice(string.ascii_letters)))

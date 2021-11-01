@@ -81,14 +81,14 @@ class TestCore(unittest.TestCase):
         self.dut.submodules.core = MipyfiveCore(
             dataWidth=32, regCount=32, pcStart=0, ISA=CoreISAconfigs.RV32I.value
         )
-        self.dut.submodules.imem = RAM(width=32, depth=512, wordAligned=True)
+        self.dut.submodules.imem = RAM(width=32, depth=512)
         self.dut.submodules.dmem = RAM(width=32, depth=512)
 
         self.dut.d.comb += [
             # imem connections
             self.dut.submodules.imem.writeEnable.eq(0),
             self.dut.submodules.imem.writeData.eq(0),
-            self.dut.submodules.imem.readAddr.eq(self.dut.submodules.core.PCout),
+            self.dut.submodules.imem.readAddr.eq(self.dut.submodules.core.PCout[2:]),
             self.dut.submodules.imem.writeAddr.eq(0),
             # dmem connections
             self.dut.submodules.dmem.writeEnable.eq(self.dut.submodules.core.DataWE),
