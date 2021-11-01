@@ -10,7 +10,8 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "nmigen",
-        "riscv-assembler @ git+https://github.com/devbored/riscv-assembler.git"
+        # Uncomment when this PyPI package is updated
+        #"riscv-assembler"
     ],
     packages=find_packages(),
     project_urls={

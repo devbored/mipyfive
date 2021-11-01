@@ -31,7 +31,11 @@ Another RISC-V core - implemented via [nMigen](https://github.com/m-labs/nmigen)
     - Windows and Ubuntu 👉 http://www.clifford.at/yosys/download.html
     - macOS 👉 https://formulae.brew.sh/formula/yosys
 - nmigen
-    - Installation 👉 [Link](https://github.com/m-labs/nmigen#installation)
+
+## Setup
+```Bash
+python3 ./setup.py install
+```
 
 ## Building/Generating the hardware 🛠️
 The main utility that drives almost everything is the `cli.py` script.
@@ -56,11 +60,9 @@ Generated files are located in the `out/` folder.
 ## Testing 🧪
 Make sure you have the `riscv-assembler` python package installed prior to running unit tests.
 
-**NOTE**: You will likely need to use my fork of the `riscv-assembler` package rather than what's in Pip:
+**NOTE**: You will likely need to use my fork of the `riscv-assembler` package rather than what's in PyPI:
 ```Bash
-git clone https://github.com/devbored/riscv-assembler.git
-cd ./riscv-assembler
-python3 ./setup.py install
+pip3 install git+https://github.com/devbored/riscv-assembler.git
 ```
 
 To run all the mipyfive unit tests:
