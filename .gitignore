@@ -9,3 +9,6 @@ results.xml
 *_bmc/
 *_cover/
 out/
+/*.egg-info
+/.eggs
+dist/
