@@ -90,10 +90,7 @@ class MIOC(Elaboratable):
 @dataclass
 class SmolConfig:
     # Soft-core configs
-    core_isa                : str = None
-    core_data_width         : int = None
-    core_reg_count          : int = None
-    core_pc_start           : int = None
+    core_config             : MipyfiveConfig = None
     # UART controller
     uart_addr_width         : int = None
     uart_data_width         : int = None
@@ -107,7 +104,7 @@ class SmolConfig:
 
 # A small example SoC with an mipyfive (RV32I) soft-core.
 class Smol(Elaboratable):
-    def __init__(self, config:SmolConfig=None):
+    def __init__(self, mp5Config:MipyfiveConfig=None, config:SmolConfig=None):
         if type(config) is not SmolConfig:
             raise ValueError(
                 "[mipyfive - smol.py]: " +
@@ -122,12 +119,7 @@ class Smol(Elaboratable):
         self.sseg1_out  = Signal(7)
 
         # Smol submodules
-        self.core = MipyfiveCore(
-            self.config.core_data_width,
-            self.config.core_reg_count,
-            self.config.core_pc_start,
-            self.config.core_isa
-        )
+        self.core = MipyfiveCore(config=mp5Config)
         self.mioc = MIOC(
             dataWidth   = 32
         )

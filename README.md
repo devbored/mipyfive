@@ -70,9 +70,14 @@ To run all the mipyfive unit tests:
 python3 ./cli.py -t
 ```
 
-Individual unit tests can be ran by running from the `tests/` folder. Example:
+Individual unit tests can be ran by passing the test name(s) via the `-t` nargs option.
+
+Example - Running `test_alu` and `test_core`:
 ```Bash
-python3 ./tests/test_alu.py
+python3 ./cli.py -t alu core
 ```
-You can specify the help option `-h` for each sub-test to see what options are available
-(mainly just dumping the VCD file and changing test verbosity).
+
+To dump the VCD file(s) of the test(s) add the `-vcd` option. You can also change the unittest verbosity
+level by using the `-tv <int>` flag.
+
+Any generated VCD file is located in `out/vcd`.

@@ -124,13 +124,16 @@ class TestAlu(unittest.TestCase):
     test_alu_srl = test_runner(int1, int2, AluOp.SRL)
     test_alu_sra = test_runner(int1, int2, AluOp.SRA)
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--vcd", action="store_true", help="Emit VCD files.")
-parser.add_argument("-v", dest="verbosity", type=int, default=2, help="Verbosity level.")
-args, argv = parser.parse_known_args()
-sys.argv[1:] = argv
-if args.vcd is True:
-    print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
-    createVcd = True
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--vcd", action="store_true", help="Emit VCD files.")
+    parser.add_argument("-v", dest="verbosity", type=int, default=2, help="Verbosity level.")
+    args, unknown = parser.parse_known_args()
+    if unknown:
+        print(f"Ignoring unknown args:\n{unknown}\n")
+    sys.argv[1:] = [x for x in unknown if x not in sys.argv]
+    if args.vcd is True:
+        print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
+        createVcd = True
 
-unittest.main(verbosity=args.verbosity)
+    unittest.main(verbosity=args.verbosity)

@@ -17,7 +17,10 @@ if __name__ == "__main__":
         help="PC start/reset value (Prefix value with '0x' for hex).")
     parser.add_argument("--buildCore", "-bc", action="store_true", help="Build and output the main core")
     parser.add_argument("--buildSmol", "-bs", action="store_true", help="Build and output the smol SoC example")
-    parser.add_argument("--runTests", "-t", action="store_true", help="Run the unit tests and exit")
+    parser.add_argument("--runTests", "-t", nargs="*", dest="runTests", help="Run the unit test(s) and exit")
+    parser.add_argument("--testVerbosity", "-tv", type=int, dest="testVerbosity", default=2,
+        help="Unittest verbosity [0 - 3]")
+    parser.add_argument("--vcd", action="store_true", help="Dump VCD file of test(s)")
     args, unknown = parser.parse_known_args()
 
     if not len(sys.argv) > 1:
@@ -29,12 +32,21 @@ if __name__ == "__main__":
         parser.print_help()
         exit(0)
 
+    # Unit test vars
+    testDir     = os.path.abspath(os.path.join(os.path.dirname(__file__), "tests"))
+    tests       = glob.glob(f"{testDir}/test_*.py")
+    testNames   = [os.path.splitext(os.path.basename(x))[0].split("_")[1] for x in tests]
+    testDict    = {testNames[x]: tests[x] for x in range(len(testNames))}
+    # If no tests are specified, then run all of them
+    if args.runTests is not None and not args.runTests:
+        args.runTests = testNames
+
     isaString = "RV32I"
     isas = {
-        "RV32I"     : CoreISAconfigs.RV32I.value,
-        "RV32IF"    : CoreISAconfigs.RV32IM.value,
-        "RV32IM"    : CoreISAconfigs.RV32IF.value,
-        "RV32IFM"   : CoreISAconfigs.RV32IMF.value
+        "RV32I"     : CoreISAconfigs.RV32I,
+        "RV32IF"    : CoreISAconfigs.RV32IM,
+        "RV32IM"    : CoreISAconfigs.RV32IF,
+        "RV32IFM"   : CoreISAconfigs.RV32IMF
     }
     isaConfig = isas[isaString]
 
@@ -49,21 +61,24 @@ if __name__ == "__main__":
     if args.il is True:
         generateType = "il"
 
-    # A convienence test-runner to go over all tests
+    # A convienence test-runner wrapper
     if args.runTests:
-        testDir     = os.path.abspath(os.path.join(os.path.dirname(__file__), "tests"))
-        tests       = glob.glob(f"{testDir}/test_*.py")
-        testNames   = [os.path.splitext(os.path.basename(x))[0] for x in tests]
-        testDict    = {testNames[x]: tests[x] for x in range(len(testNames))}
-
         testCount = 0
         failedTests = []
         print("[mipyfive - Info]: Running unit tests...")
-        for testName, testPath in testDict.items():
-            print(f"\n[ {testName} ]")
-            ret = os.system(f"{sys.executable} {testPath} -v 0")
+        for test in args.runTests:
+            if test not in testDict:
+                print(f"[mipyfive - Error]: Unknown test name: [ {test} ].")
+                print(f"\nList of available unit tests: {testNames}")
+                exit(1)
+            testFile = testDict[test]
+            print(f"\n[mipyfive - Running test_{test}]:")
+            testCmd = f"{sys.executable} {testFile} -v {args.testVerbosity}"
+            if args.vcd:
+                testCmd += " --vcd"
+            ret = os.system(testCmd)
             if ret != 0:
-                failedTests.append(testName)
+                failedTests.append(test)
             testCount += 1
 
         # Results
@@ -87,12 +102,21 @@ if __name__ == "__main__":
 
         rtlFile = os.path.join(outputDir, f"mipyfive_core.{generateType}")
         print(f"[mipyfive - Info]: Generating mipyfive core RTL to --> {rtlFile}")
-        m = MipyfiveCore(
-            dataWidth       = 32,
-            regCount        = 32,
-            pcStart         = pcStart,
-            ISA             = isaConfig
+
+        config = MipyfiveConfig(
+            core_isa        = isaConfig,
+            core_data_width = 32,
+            core_reg_count  = 32,
+            core_pc_start   = pcStart
         )
+        print(f"\nMipyfive core configuration:")
+        print("=" * 70)
+        for field in config.__dataclass_fields__:
+            value = getattr(config, field)
+            print(f"{field}: {value}")
+        print("=" * 70)
+        print()
+        m = MipyfiveCore(config=config)
         # Override sys.argv for nMigen main
         nmigenMainArgs = [
             "generate",
@@ -122,12 +146,15 @@ if __name__ == "__main__":
         rtlFile = os.path.join(outputDir, f"smol.{generateType}")
         print(f"[mipyfive - Info]: Generating smol SoC RTL to --> {rtlFile}")
 
-        config = SmolConfig(
+        mp5Config = MipyfiveConfig(
+            core_isa        = isaConfig,
+            core_data_width = 32,
+            core_reg_count  = 32,
+            core_pc_start   = pcStart
+        )
+        smolConfig = SmolConfig(
             # Core
-            core_isa                = isaConfig,
-            core_data_width         = 32,
-            core_reg_count          = 32,
-            core_pc_start           = pcStart,
+            core_config             = mp5Config,
             # UART controller
             uart_addr_width         = 32,
             uart_data_width         = 32,
@@ -143,9 +170,14 @@ if __name__ == "__main__":
             sseg1_is_common_anode   = False,
             sseg1_data_width        = 32
         )
-        print(f"ISA IDs: {isas}")
-        print(f"\nConfiguration:\n{config}\n")
-        m = Smol(config=config)
+        print(f"\nSmol configuration:")
+        print("=" * 70)
+        for field in smolConfig.__dataclass_fields__:
+            value = getattr(smolConfig, field)
+            print(f"{field}: {value}")
+        print("=" * 70)
+        print()
+        m = Smol(mp5Config=mp5Config, config=smolConfig)
 
         # Override sys.argv for nMigen main
         nmigenMainArgs = [

@@ -78,9 +78,13 @@ def test_core(program, initRegs=[], expectedRegs=[]):
 class TestCore(unittest.TestCase):
     def setUp(self):
         self.dut  = Module()
-        self.dut.submodules.core = MipyfiveCore(
-            dataWidth=32, regCount=32, pcStart=0, ISA=CoreISAconfigs.RV32I.value
+        config = MipyfiveConfig(
+            core_isa        = CoreISAconfigs.RV32I,
+            core_data_width = 32,
+            core_reg_count  = 32,
+            core_pc_start   = 0
         )
+        self.dut.submodules.core = MipyfiveCore(config=config)
         self.dut.submodules.imem = RAM(width=32, depth=512)
         self.dut.submodules.dmem = RAM(width=32, depth=512)
 
@@ -122,14 +126,15 @@ class TestCore(unittest.TestCase):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--vcd", action="store_true", help="Emit VCD files.")
-    parser.add_argument("--dump", action="store_true", help="Dump out RISC-V asm and machine code.")
     parser.add_argument("-v", dest="verbosity", type=int, default=2, help="Verbosity level.")
-    args, argv = parser.parse_known_args()
-    sys.argv[1:] = argv
+    args, unknown = parser.parse_known_args()
+    if unknown:
+        print(f"Ignoring unknown args:\n{unknown}\n")
+    sys.argv[1:] = [x for x in unknown if x not in sys.argv]
     if args.vcd is True:
         print(f"[mipyfive - Info]: Emitting VCD files to --> {outputDir}\n")
         createVcd = True
-    if args.dump is True:
+    if args.verbosity >= 3:
         verboseProgram = True
 
     unittest.main(verbosity=args.verbosity)

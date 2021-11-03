@@ -12,31 +12,48 @@ from .controller import *
 
 from examples.common.ram import *
 
+from dataclasses import dataclass
+
+@dataclass
+class MipyfiveConfig:
+    # Soft-core configs
+    core_isa                : CoreISAconfigs = None
+    core_data_width         : int = None
+    core_reg_count          : int = None
+    core_pc_start           : int = None
+
 class MipyfiveCore(Elaboratable):
     # TODO: Starting boot addr, extensions, etc. can be configured here
-    def __init__(self, dataWidth, regCount, pcStart, ISA):
-        self.dataWidth      = dataWidth
-        self.pcStart        = pcStart
-        self.addrBits       = ceilLog2(regCount)
-        self.ISA            = ISA # TODO: Use later when extensions are added/supported
+    def __init__(self, config:MipyfiveConfig=None):
+        if type(config) is not MipyfiveConfig:
+            raise ValueError(
+                "[mipyfive - smol.py]: " +
+                f"Incorrect config object type [ { type(config)} ] for Smol - expected [ {type(MipyfiveConfig)} ]"
+            )
+        self.config = config
+
+        self.dataWidth      = config.core_data_width
+        self.pcStart        = config.core_pc_start
+        self.addrBits       = ceilLog2(config.core_reg_count)
+        self.ISA            = config.core_isa # TODO: Use later when extensions are added/supported
 
         self.instruction    = Signal(32)
         self.IF_valid       = Signal()
         self.MEM_valid      = Signal()
-        self.DataIn         = Signal(dataWidth)
+        self.DataIn         = Signal(config.core_data_width)
 
         self.PCout          = Signal(32)
         self.DataAddr       = Signal(32)
-        self.DataOut        = Signal(dataWidth)
+        self.DataOut        = Signal(config.core_data_width)
         self.DataWE         = Signal()
 
         # --- Core Submodules ---
-        self.alu        = ALU(dataWidth)
-        self.lsu        = LSU(dataWidth)
+        self.alu        = ALU(config.core_data_width)
+        self.lsu        = LSU(config.core_data_width)
         self.immgen     = ImmGen() # TODO: Allow for arbitrary width?
-        self.hazard     = HazardUnit(regCount)
-        self.forward    = ForwardingUnit(regCount)
-        self.regfile    = RegFile(dataWidth, regCount)
+        self.hazard     = HazardUnit(config.core_reg_count)
+        self.forward    = ForwardingUnit(config.core_reg_count)
+        self.regfile    = RegFile(config.core_data_width, config.core_reg_count)
         self.control    = Controller()
 
         # Configure and create pipeline registers
