@@ -125,13 +125,13 @@ class Smol(Elaboratable):
         )
         self.imem = RAM(
             width       = 32,
-            depth       = 0x1000,
+            depth       = 0x400, # 1KB
             init        = None,
             dualRead    = True
         )
         self.dmem = RAM(
             width       = 32,
-            depth       = 0x800,
+            depth       = 0x400, # 1KB
             init        = None,
             dualRead    = False
         )
