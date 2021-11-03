@@ -139,6 +139,13 @@ class CoreISAconfigs(Enum):
     RV32IM  = 1
     RV32IF  = 2
     RV32IMF = 3
+## ISA table
+ISAtable = {
+    "RV32I"     : CoreISAconfigs.RV32I,
+    "RV32IF"    : CoreISAconfigs.RV32IM,
+    "RV32IM"    : CoreISAconfigs.RV32IF,
+    "RV32IFM"   : CoreISAconfigs.RV32IMF
+}
 
 class Imm32Ranges(Enum):
     I_MIN    = -((2**12)//2)
