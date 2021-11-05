@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import glob
 import argparse
@@ -160,6 +161,26 @@ def buildSmol(args):
         m.sseg0_out,
         m.sseg1_out
     ])
+
+    # Gross ... but can't seem to elicit "$readmemh(...)" in nmigen
+    if args.il is False:
+        with open(rtlFile, 'r') as file:
+            rtlFileStr = file.read()
+            # Clear-out the assignments
+            rtlFileStr = re.sub(
+                r'\s*SMOL_RAM\[\d*\].*',
+                '',
+                rtlFileStr
+            )
+            # Add-in the $readmemh(...)
+            rtlFileStr = re.sub(
+                r'\s*initial begin\n\s*end',
+                '\n  initial begin\n    $readmemh("smol_ram_init.hex", SMOL_RAM);\n  end',
+                rtlFileStr
+            )
+        with open(rtlFile, 'w') as file:
+            file.write(rtlFileStr)
+
     print("[mipyfive - Info]: Done.")
 
 if __name__ == "__main__":

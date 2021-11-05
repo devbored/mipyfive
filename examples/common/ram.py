@@ -3,7 +3,7 @@ from mipyfive.utils import *
 
 # A basic BRAM module
 class RAM(Elaboratable):
-    def __init__(self, width, depth, init=None, dualRead=False):
+    def __init__(self, width, depth, init=None, dualRead=False, name=None):
         addrBits            = ceilLog2(depth)
         self.dualRead       = dualRead
         self.writeEnable    = Signal()
@@ -15,7 +15,7 @@ class RAM(Elaboratable):
         if dualRead:
             self.readAddr2  = Signal(addrBits)
         self.writeAddr      = Signal(addrBits)
-        self.memory         = Memory(width=width, depth=depth, init=init)
+        self.memory         = Memory(width=width, depth=depth, init=init, name=name)
 
         self.readPort       = self.memory.read_port()
         if dualRead:

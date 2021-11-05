@@ -19,8 +19,8 @@ A small example SoC with an mipyfive (RV32I) soft-core.
 ## Memory map 🗺️
 | Address Range             | Description                             |
 | ------------------------- | --------------------------------------- |
-| 0x00000000 ... 0x000003FF | Internal IMEM (BRAM) - 1KB (read-only)  |
-| 0x00000400 ... 0x000007FF | Internal DMEM (BRAM) - 1KB              |
+| 0x00000000 ... 0x000001FF | Internal IMEM (BRAM) - 2KB (read-only)  |
+| 0x00000200 ... 0x000003FF | Internal DMEM (BRAM) - 2KB              |
 | 0x00003000 ... 0x00003003 | UART RX register                        |
 | 0x00003004 ... 0x00003007 | UART TX register                        |
 | 0x00003008 ... 0x0000300B | UART status register                    |
