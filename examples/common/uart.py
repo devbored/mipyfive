@@ -6,7 +6,6 @@ import argparse
 import unittest
 
 from nmigen import *
-from nmigen.cli import main
 from nmigen.back.pysim import *
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))

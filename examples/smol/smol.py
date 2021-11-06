@@ -3,7 +3,8 @@ from mipyfive.core import *
 from mipyfive.utils import *
 
 # Peripherals
-from examples.common.uart import *
+from examples.common.uart import UartConfig
+from examples.common.uart import UARTcontroller
 from examples.common.ssegdriver import *
 
 from dataclasses import dataclass
