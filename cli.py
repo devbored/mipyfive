@@ -3,6 +3,7 @@ import re
 import sys
 import glob
 import argparse
+import subprocess
 
 from nmigen import *
 from nmigen.cli import main
@@ -10,7 +11,7 @@ from mipyfive.core import *
 from mipyfive.types import *
 from examples.smol.smol import *
 
-outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "out"))
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "build"))
 
 def runTests(args):
     ''' Helper function to run the unit tests '''
@@ -36,8 +37,8 @@ def runTests(args):
         testCmd = f"{sys.executable} {testFile} -v {args.testVerbosity}"
         if args.vcd:
             testCmd += " --vcd"
-        ret = os.system(testCmd)
-        if ret != 0:
+        subproc = subprocess.run(testCmd)
+        if subproc.returncode != 0:
             failedTests.append(test)
         testCount += 1
 
@@ -63,7 +64,8 @@ def buildCore(args):
     if not os.path.exists(outputDir):
         os.makedirs(outputDir)
     rtlFile = os.path.join(outputDir, f"mipyfive_core.{generateType}")
-    print(f"[mipyfive - Info]: Generating mipyfive core to --> {rtlFile}")
+    print("=" * 70)
+    print(f"[mipyfive - Info]: Generating mipyfive core to: {rtlFile}")
 
     # Config
     config = MipyfiveConfig(
@@ -98,7 +100,9 @@ def buildCore(args):
         m.DataOut,
         m.DataWE
     ])
-    print("[mipyfive - Info]: Done.")
+    print("\n[mipyfive - Info]: Done.")
+    print("=" * 70)
+    print()
 
 def buildSmol(args):
     ''' Helper function to build the example Smol SoC w/ Mipyfive soft-core'''
@@ -110,7 +114,8 @@ def buildSmol(args):
     if not os.path.exists(outputDir):
         os.makedirs(outputDir)
     rtlFile = os.path.join(outputDir, f"smol.{generateType}")
-    print(f"[mipyfive - Info]: Generating smol SoC to --> {rtlFile}")
+    print("=" * 70)
+    print(f"[mipyfive - Info]: Generating smol SoC to: {rtlFile}")
 
     # Config
     mp5Config = MipyfiveConfig(
@@ -181,7 +186,14 @@ def buildSmol(args):
         with open(rtlFile, 'w') as file:
             file.write(rtlFileStr)
 
-    print("[mipyfive - Info]: Done.")
+    # Compile firmware and convert to a readmemh-accepted hex file
+    print("[mipyfive - Info]: Compiling smol_firmware.c")
+    subprocess.run("cmake . -Bbuild")       # Configure
+    subprocess.run("cmake --build build")   # Build
+
+    print("\n[mipyfive - Info]: Done.")
+    print("=" * 70)
+    print()
 
 if __name__ == "__main__":
     # Define args/opts

@@ -8,7 +8,6 @@ results.xml
 *.v
 *_bmc/
 *_cover/
-out/
 /*.egg-info
 /.eggs
 dist/

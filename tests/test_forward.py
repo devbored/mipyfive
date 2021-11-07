@@ -11,7 +11,7 @@ from mipyfive.types import *
 from mipyfive.forward import *
 
 createVcd = False
-outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "build", "vcd"))
 def test_forward(
     IF_ID_rs1, ID_EX_rs1, IF_ID_rs2, ID_EX_rs2, EX_MEM_rd, MEM_WB_rd, WB_BUFFER_rd,
         EX_MEM_reg_write, MEM_WB_reg_write, WB_BUFFER_reg_write, expectedAluACtrl, expectedAluBCtrl

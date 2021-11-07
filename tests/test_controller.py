@@ -12,7 +12,7 @@ from mipyfive.utils import *
 from mipyfive.controller import *
 
 createVcd = False
-outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "build", "vcd"))
 def test_controller(
     instruction, aluOp, regWrite, memWrite, memRead, mem2Reg, aluAsrc,
         aluBsrc, branch, lsuLoadCtrl, lsuStoreCtrl, jump, jumpR

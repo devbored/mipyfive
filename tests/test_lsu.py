@@ -11,7 +11,7 @@ from mipyfive.types import *
 from mipyfive.lsu import *
 
 createVcd = False
-outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "build", "vcd"))
 def test_load(lDin, lCtrl, lDoutExpected):
     def test(self):
         global createVcd

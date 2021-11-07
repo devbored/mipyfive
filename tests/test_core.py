@@ -15,7 +15,7 @@ from examples.common.ram import *
 
 createVcd      = False
 verboseProgram = False
-outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out", "vcd"))
+outputDir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "build", "vcd"))
 def test_core(program, initRegs=[], expectedRegs=[]):
     def test(self):
         global createVcd
