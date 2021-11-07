@@ -245,7 +245,7 @@ class MipyfiveCore(Elaboratable):
         with m.Elif(invalidFetch):
             m.d.sync += PC.eq(PC_last)
         with m.Else():
-            m.d.sync += PC.eq(PC + 4)
+            m.d.sync += PC.eq(PC + C(4, self.dataWidth))
 
         # --- Decode --------------------------------------------------------------------------------------------------
 
@@ -287,7 +287,7 @@ class MipyfiveCore(Elaboratable):
             self.regfile.rdData.eq(self.lsu.lDataOut),
             self.regfile.rdAddr.eq(self.MEM_WB_rdAddr),
         ]
-        with m.If(self.MEM_WB_rdAddr != 0):
+        with m.If(self.MEM_WB_rdAddr != C(0, self.regfile.addrBits)):
             m.d.comb += self.regfile.we.eq(self.MEM_WB_regWrite)
         with m.Else():
             m.d.comb += self.regfile.we.eq(0)

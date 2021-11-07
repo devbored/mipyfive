@@ -97,9 +97,9 @@ class UART(Elaboratable):
                 m.d.sync += [self.rx_ready_o.eq(0), self.rx_reg_o.eq(self.rxShift[1:shiftSize-1])]
 
             with m.State("RX_START"):
-                with m.If(rxSampleTickCounter == 0):
+                with m.If(rxSampleTickCounter == C(0, shape=rxSampleTickCounter.shape())):
                     m.d.sync += rxSampleTickCounter.eq(self.baudSampleRate)
-                    with m.If(rxSampleCounter == 0):
+                    with m.If(rxSampleCounter == C(0, shape=rxSampleCounter.shape())):
                         m.next = "RX_DATA"
                         m.d.sync += [
                             rxSampleCounter.eq(15),
@@ -113,10 +113,10 @@ class UART(Elaboratable):
                     m.d.sync += rxSampleTickCounter.eq(rxSampleTickCounter - 1)
 
             with m.State("RX_DATA"):
-                with m.If(rxSampleTickCounter == 0):
+                with m.If(rxSampleTickCounter == C(0, shape=rxSampleTickCounter.shape())):
                     m.d.sync += rxSampleTickCounter.eq(self.baudSampleRate)
-                    with m.If(rxSampleCounter == 0):
-                        with m.If(rxBitCounter == 0):
+                    with m.If(rxSampleCounter == C(0, shape=rxSampleCounter.shape())):
+                        with m.If(rxBitCounter == C(0, shape=rxBitCounter.shape())):
                             m.next = "RX_STOP"
                             m.d.sync += [
                                 rxSampleCounter.eq(15),
@@ -134,9 +134,9 @@ class UART(Elaboratable):
                     m.d.sync += rxSampleTickCounter.eq(rxSampleTickCounter - 1)
 
             with m.State("RX_STOP"):
-                with m.If(rxSampleTickCounter == 0):
+                with m.If(rxSampleTickCounter == C(0, shape=rxSampleTickCounter.shape())):
                     m.d.sync += rxSampleTickCounter.eq(self.baudSampleRate)
-                    with m.If(rxSampleCounter == 0):
+                    with m.If(rxSampleCounter == C(0, shape=rxSampleCounter.shape())):
                         m.next = "RX_IDLE"
                         m.d.sync += [
                             self.rx_ready_o.eq(1),
@@ -163,9 +163,9 @@ class UART(Elaboratable):
                     ]
 
             with m.State("TX_START"):
-                with m.If(txSampleTickCounter == 0):
+                with m.If(txSampleTickCounter == C(0, shape=txSampleTickCounter.shape())):
                     m.d.sync += txSampleTickCounter.eq(self.baudSampleRate)
-                    with m.If(txSampleCounter == 0):
+                    with m.If(txSampleCounter == C(0, shape=txSampleCounter.shape())):
                         m.next = "TX_DATA"
                         m.d.sync += [
                             txSampleCounter.eq(15),
@@ -179,14 +179,14 @@ class UART(Elaboratable):
                     m.d.sync += txSampleTickCounter.eq(txSampleTickCounter - 1)
 
             with m.State("TX_DATA"):
-                with m.If(txSampleTickCounter == 0):
+                with m.If(txSampleTickCounter == C(0, shape=txSampleTickCounter.shape())):
                     m.d.sync += txSampleTickCounter.eq(self.baudSampleRate)
-                    with m.If(txSampleCounter == 0):
+                    with m.If(txSampleCounter == C(0, shape=txSampleCounter.shape())):
                         m.d.sync += [
                             self.txShift.eq(Cat(self.txShift[1:], 1)),
                             txSampleCounter.eq(15)
                         ]
-                        with m.If(txBitCounter == 0):
+                        with m.If(txBitCounter == C(0, shape=txBitCounter.shape())):
                             m.next = "TX_STOP"
                             m.d.sync += [
                                 txSampleCounter.eq(15),
@@ -200,9 +200,9 @@ class UART(Elaboratable):
                     m.d.sync += txSampleTickCounter.eq(txSampleTickCounter - 1)
 
             with m.State("TX_STOP"):
-                with m.If(txSampleTickCounter == 0):
+                with m.If(txSampleTickCounter == C(0, shape=txSampleTickCounter.shape())):
                     m.d.sync += txSampleTickCounter.eq(self.baudSampleRate)
-                    with m.If(txSampleCounter == 0):
+                    with m.If(txSampleCounter == C(0, shape=txSampleCounter.shape())):
                         m.next = "TX_IDLE"
                         m.d.sync += [
                             self.tx_busy_o.eq(0),
@@ -302,7 +302,7 @@ class UARTcontroller(Elaboratable):
 
         # Update the RX reg if its ready
         with m.If(statusReg[UartControllerBits.RX_READY.value]):
-            m.d.sync += rxReg.eq(self.uart.rx_reg_o)
+            m.d.sync += rxReg.eq(Cat(self.uart.rx_reg_o, C(0, self.dataWidth - self.config.data_bits)))
 
         return m
 

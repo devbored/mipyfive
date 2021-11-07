@@ -79,7 +79,7 @@ class Controller(Elaboratable):
                     self.aluAsrc.eq(AluASrcCtrl.FROM_RS1.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
                 ]
-                with m.If(opcode == Rv32iTypes.I_Load.value):
+                with m.If(opcode == C(Rv32iTypes.I_Load.value, 7)):
                     m.d.comb += [
                         self.memRead.eq(1),
                         self.aluOp.eq(AluOp.ADD.value),
@@ -147,12 +147,12 @@ class Controller(Elaboratable):
                         with m.Case(Rv32iInstructions.SLLI.value, Rv32iInstructions.SRLI.value,
                             Rv32iInstructions.SRAI.value):
                                 m.d.comb += self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
-                                with m.If(funct3 == 0b001):
+                                with m.If(funct3 == C(0b001, 3)):
                                     m.d.comb += [
                                         self.aluOp.eq(AluOp.SLL.value),
                                         self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
                                     ]
-                                with m.Elif((funct3 == 0b101) & (funct7 == 0b0100000)):
+                                with m.Elif((funct3 == C(0b101, 3)) & (funct7 == C(0b0100000, 7))):
                                     m.d.comb += [
                                         self.aluOp.eq(AluOp.SRA.value),
                                         self.mem2Reg.eq(Mem2RegCtrl.FROM_ALU.value)
@@ -254,7 +254,7 @@ class Controller(Elaboratable):
                     self.aluAsrc.eq(AluASrcCtrl.FROM_PC.value),
                     self.aluBsrc.eq(AluBSrcCtrl.FROM_IMM.value)
                 ]
-                with m.If(opcode == Rv32iInstructions.LUI.value):
+                with m.If(opcode == C(Rv32iInstructions.LUI.value, 7)):
                     m.d.comb += self.aluOp.eq(AluOp.PASS_B)
                 with m.Else():
                     m.d.comb += self.aluOp.eq(AluOp.ADD)
