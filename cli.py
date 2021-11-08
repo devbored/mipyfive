@@ -37,7 +37,7 @@ def runTests(args):
         testCmd = f"{sys.executable} {testFile} -v {args.testVerbosity}"
         if args.vcd:
             testCmd += " --vcd"
-        subproc = subprocess.run(testCmd)
+        subproc = subprocess.run(testCmd.split())
         if subproc.returncode != 0:
             failedTests.append(test)
         testCount += 1
@@ -188,8 +188,8 @@ def buildSmol(args):
 
     # Compile firmware and convert to a readmemh-accepted hex file
     print("[mipyfive - Info]: Compiling smol_firmware.c")
-    subprocess.run("cmake . -Bbuild")       # Configure
-    subprocess.run("cmake --build build")   # Build
+    subprocess.run("cmake . -Bbuild".split())       # Configure
+    subprocess.run("cmake --build build".split())   # Build
 
     print("\n[mipyfive - Info]: Done.")
     print("=" * 70)
