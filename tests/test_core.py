@@ -11,7 +11,7 @@ from tests.programs import *
 from mipyfive.utils import *
 from mipyfive.core import *
 from mipyfive.types import *
-from examples.common.ram import *
+from common.ram import *
 
 createVcd      = False
 verboseProgram = False

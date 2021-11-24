@@ -10,8 +10,6 @@ from .pipereg import *
 from .regfile import *
 from .controller import *
 
-from examples.common.ram import *
-
 from dataclasses import dataclass
 
 @dataclass
