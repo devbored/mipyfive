@@ -2,7 +2,8 @@
 Another RISC-V core - implemented via [nMigen](https://github.com/m-labs/nmigen)
 
 🚧 *Work in Progress* 🚧
-Repo is subject to minor and major changes (See related main checklist items below).
+
+Repo is subject to major changes (See related main checklist items below).
 
 ## Design
 - Implements RV32I
@@ -34,7 +35,7 @@ python3 ./setup.py install
 ## Building 🛠️
 To generate just the RV32I mipyfive core:
 ```Bash
-python3 ./cli.py --buildCore
+python3 ./cli.py --build
 ```
 There is also a `-il` option that outputs as Yosys RTLIL instead.
 
