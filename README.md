@@ -1,30 +1,14 @@
 # mipyfive
-Another RISC-V core - implemented via [nMigen](https://github.com/m-labs/nmigen)
-
-🚧 *Work in Progress* 🚧
-
-Repo is subject to major changes (See related main checklist items below).
+A RISC-V core - implemented via [nMigen](https://github.com/m-labs/nmigen)
 
 ## Design
 - Implements RV32I
 - 5 stage pipelined processor
 - Static branch prediction (assume not-taken)
 
-## Main Checklist Items:
-✅ Design the main mipyfive RV32I Core
-
-✅ Unit Testing (via nMigen)
-
-❌ Validate the main RISC-V RV32I Core (RISC-V Conformance Testing)
-
-## Extra Checklist Items
-❌ Explore/Add RISC-V Extensions in the future (mainly multiply/divide and fp32)
-
 ## Main dependencies
 - Python 3.7 (or newer)
 - Yosys 0.9 (or newer)
-    - Windows and Ubuntu 👉 http://www.clifford.at/yosys/download.html
-    - macOS 👉 https://formulae.brew.sh/formula/yosys
 - nmigen
 
 ## Setup
