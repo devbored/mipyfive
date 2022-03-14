@@ -4,8 +4,8 @@ import random
 import argparse
 import unittest
 from enum import Enum
-from nmigen import *
-from nmigen.back.pysim import *
+from amaranth import *
+from amaranth.sim import *
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mipyfive.types import *

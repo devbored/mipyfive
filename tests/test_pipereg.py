@@ -3,8 +3,8 @@ import sys
 import random
 import argparse
 import unittest
-from nmigen import *
-from nmigen.back.pysim import *
+from amaranth import *
+from amaranth.sim import *
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mipyfive.pipereg import *
@@ -29,12 +29,6 @@ def test_pipereg(values):
                 for j in range(2):
                     yield Tick()
                 self.assertEqual((yield self.dut.dout), val)
-
-                # NOTE: Toggling/testing the reset signal in simulation is currently non-working in nMigen...
-                #yield self.dut.rst.eq(1)
-                #for j in range(2):
-                #    yield Tick()
-                #self.assertEqual((yield self.dut.dout), 0)
 
         sim.add_clock(1e-6)
         sim.add_sync_process(process)

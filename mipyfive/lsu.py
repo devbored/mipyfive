@@ -1,4 +1,4 @@
-from nmigen import *
+from amaranth import *
 from .types import *
 
 # Load-Store Unit really only does sign/zero extensions at the moment

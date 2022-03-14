@@ -1,5 +1,5 @@
 # mipyfive
-A RISC-V core - implemented via [nMigen](https://github.com/m-labs/nmigen)
+A RISC-V core - implemented via [Amaranth HDL](https://github.com/amaranth-lang/amaranth)
 
 ## Design
 - Implements RV32I
@@ -8,13 +8,8 @@ A RISC-V core - implemented via [nMigen](https://github.com/m-labs/nmigen)
 
 ## Main dependencies
 - Python 3.7 (or newer)
-- Yosys 0.9 (or newer)
-- nmigen
-
-## Setup
-```Bash
-python3 ./setup.py install
-```
+- Amaranth HDL
+    - `pip install --upgrade amaranth[builtin-yosys]`
 
 ## Building 🛠️
 To generate just the RV32I mipyfive core:

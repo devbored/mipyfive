@@ -1,4 +1,4 @@
-from nmigen import *
+from amaranth import *
 from .alu import *
 from .lsu import *
 from .utils import *

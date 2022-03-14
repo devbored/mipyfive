@@ -1,4 +1,4 @@
-from nmigen import *
+from amaranth import *
 from .types import *
 from .utils import *
 

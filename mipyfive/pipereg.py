@@ -1,4 +1,4 @@
-from nmigen import *
+from amaranth import *
 
 # Adjustable-width pipeline register
 class PipeReg(Elaboratable):

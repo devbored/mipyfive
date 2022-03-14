@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import re
 import sys
@@ -5,8 +7,8 @@ import glob
 import argparse
 import subprocess
 
-from nmigen import *
-from nmigen.cli import main
+from amaranth import *
+from amaranth.cli import main
 from mipyfive.core import *
 from mipyfive.types import *
 
@@ -86,13 +88,13 @@ def buildCore(args):
     print()
     m = MipyfiveCore(config=config)
 
-    # Override sys.argv for nMigen main and run
-    nmigenMainArgs = [
+    # Override sys.argv for amaranth main and run
+    amaranthMainArgs = [
         "generate",
         "-t", generateType,
         rtlFile
     ]
-    sys.argv[1:] = nmigenMainArgs
+    sys.argv[1:] = amaranthMainArgs
     main(m, ports=[
         m.instruction,
         m.DataIn,
