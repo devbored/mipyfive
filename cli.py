@@ -67,7 +67,7 @@ def buildCore(args):
     if not os.path.exists(outputDir):
         os.makedirs(outputDir)
     rtlFile = os.path.join(outputDir, f"top.{generateType}")
-    print(f"[mipyfive - Info]: Generating mipyfive core to: {rtlFile}")
+    print(f"[mipyfive - Info]: Generating mipyfive core to: [ {rtlFile} ]")
 
     # Config
     config = MipyfiveConfig(
@@ -83,7 +83,7 @@ def buildCore(args):
             value = str(getattr(config, field)).split('.')[1]
         else:
             value = getattr(config, field)
-        print(f"{field}: {value}")
+        print(f"{field:<20}: {value}")
     print("=" * 70)
     print()
     m = MipyfiveCore(config=config)
@@ -106,7 +106,6 @@ def buildCore(args):
         m.DataWE
     ])
     print("[mipyfive - Info]: Done.")
-    print()
 
 if __name__ == "__main__":
     # Define args/opts

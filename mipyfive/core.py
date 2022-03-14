@@ -10,16 +10,6 @@ from .pipereg import *
 from .regfile import *
 from .controller import *
 
-from dataclasses import dataclass
-
-@dataclass
-class MipyfiveConfig:
-    # Soft-core configs
-    core_isa                : CoreISAconfigs = None
-    core_data_width         : int = None
-    core_reg_count          : int = None
-    core_pc_start           : int = None
-
 class MipyfiveCore(Elaboratable):
     # TODO: Starting boot addr, extensions, etc. can be configured here
     def __init__(self, config:MipyfiveConfig=None):

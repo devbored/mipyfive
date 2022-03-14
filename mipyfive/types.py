@@ -1,4 +1,5 @@
 from enum import Enum
+from dataclasses import dataclass
 
 # RISC-V RV32I Instructions
 class Rv32iInstructions(Enum):
@@ -157,3 +158,11 @@ class Imm32Ranges(Enum):
     UJ_MAX   = ((2**20)//2)-1
     # Unsigned max
     UJ_MAX_U = 2**20
+
+@dataclass
+class MipyfiveConfig:
+    # Soft-core configs
+    core_isa                : CoreISAconfigs = None
+    core_data_width         : int = None
+    core_reg_count          : int = None
+    core_pc_start           : int = None
